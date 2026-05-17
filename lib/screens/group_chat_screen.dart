@@ -43,8 +43,12 @@ class _GroupChatScreenState extends State<GroupChatScreen> {
 
         return Scaffold(
           appBar: AppBar(
-            leadingWidth: 36,
+            leadingWidth: 48,
             titleSpacing: 0,
+            leading: IconButton(
+              icon: const Icon(Icons.arrow_back_ios_rounded, size: 18),
+              onPressed: () => Navigator.of(context).pop(),
+            ),
             title: Row(children: [
               AvatarWidget(url: groupAvatar, name: groupName, size: 38),
               const SizedBox(width: 10),

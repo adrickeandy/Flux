@@ -67,8 +67,13 @@ class _ChatScreenState extends State<ChatScreen> {
                     decoration: InputDecoration(
                       hintText: 'Search messages...',
                       prefixIcon: const Icon(Icons.search_rounded, size: 18),
-                      suffixIcon: IconButton(icon: const Icon(Icons.close, size: 18),
-                          onPressed: () => setState(() { _showSearch = false; _searchQuery = ''; })),
+                      suffixIcon: IconButton(
+                        icon: const Icon(Icons.close, size: 18),
+                        onPressed: () => setState(() {
+                          _showSearch = false;
+                          _searchQuery = '';
+                        }),
+                      ),
                     ),
                   ),
                 ),
@@ -81,16 +86,19 @@ class _ChatScreenState extends State<ChatScreen> {
                     final msgs = snap.data ?? [];
                     final filtered = _searchQuery.isEmpty
                         ? msgs
-                        : msgs.where((m) => m.content.toLowerCase().contains(_searchQuery.toLowerCase())).toList();
+                        : msgs.where((m) => m.content.toLowerCase()
+                            .contains(_searchQuery.toLowerCase())).toList();
 
                     WidgetsBinding.instance.addPostFrameCallback((_) => _scrollToBottom());
 
                     if (filtered.isEmpty) {
                       return Center(
                         child: Column(mainAxisSize: MainAxisSize.min, children: [
-                          Icon(Icons.chat_bubble_outline_rounded, size: 48, color: Colors.grey.shade300),
+                          Icon(Icons.chat_bubble_outline_rounded,
+                              size: 48, color: Colors.grey.shade300),
                           const SizedBox(height: 12),
-                          Text('Say hello 👋', style: TextStyle(color: Colors.grey.shade400, fontSize: 13)),
+                          Text('Say hello 👋',
+                              style: TextStyle(color: Colors.grey.shade400, fontSize: 13)),
                         ]),
                       );
                     }
@@ -110,8 +118,10 @@ class _ChatScreenState extends State<ChatScreen> {
                           isMe: isMe,
                           showTail: showTail,
                           onReply: () => setState(() => _replyingTo = msg),
-                          onStar: () => _chatService.toggleStar(_chatDocId, msg.id, msg.isStarred),
-                          onReact: (e) => _chatService.addReaction(_chatDocId, msg.id, e),
+                          onStar: () => _chatService.toggleStar(
+                              _chatDocId, msg.id, msg.isStarred),
+                          onReact: (e) =>
+                              _chatService.addReaction(_chatDocId, msg.id, e),
                         );
                       },
                     );
@@ -151,8 +161,12 @@ class _ChatScreenState extends State<ChatScreen> {
 
   PreferredSizeWidget _buildAppBar(UserModel? other) {
     return AppBar(
-      leadingWidth: 36,
+      leadingWidth: 48,
       titleSpacing: 0,
+      leading: IconButton(
+        icon: const Icon(Icons.arrow_back_ios_rounded, size: 18),
+        onPressed: () => Navigator.of(context).pop(),
+      ),
       title: Row(
         children: [
           AvatarWidget(
@@ -169,8 +183,11 @@ class _ChatScreenState extends State<ChatScreen> {
                   style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w800)),
               Text(
                 other?.isOnline == true ? 'Online' : (other?.about ?? ''),
-                style: TextStyle(fontSize: 10,
-                    color: other?.isOnline == true ? const Color(0xFF22C55E) : Colors.grey.shade500),
+                style: TextStyle(
+                    fontSize: 10,
+                    color: other?.isOnline == true
+                        ? const Color(0xFF22C55E)
+                        : Colors.grey.shade500),
               ),
             ],
           ),
@@ -181,7 +198,8 @@ class _ChatScreenState extends State<ChatScreen> {
           icon: Icon(Icons.search_rounded, color: _showSearch ? kPrimary : null),
           onPressed: () => setState(() => _showSearch = !_showSearch),
         ),
-        IconButton(icon: const Icon(Icons.more_vert_rounded), onPressed: () {}),
+        IconButton(
+            icon: const Icon(Icons.more_vert_rounded), onPressed: () {}),
       ],
     );
   }

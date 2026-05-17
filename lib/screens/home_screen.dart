@@ -44,6 +44,11 @@ class _HomeScreenState extends State<HomeScreen> {
                         style: const TextStyle(fontSize: 9, fontWeight: FontWeight.w900,
                             letterSpacing: 2, color: kPrimary)),
                   ),
+                  IconButton(
+                    onPressed: () => context.push('/settings'),
+                    icon: const Icon(Icons.settings_rounded, size: 20),
+                    color: Colors.grey,
+                  ),
                 ],
               ),
               Expanded(
@@ -150,7 +155,6 @@ class _ChatTile extends StatelessWidget {
     final otherUid = chat.participants.firstWhere((p) => p != uid, orElse: () => '');
     final isArchived = chat.archivedBy.contains(uid);
 
-    // Fetch other user info for DM
     return FutureBuilder<DocumentSnapshot>(
       future: otherUid.isNotEmpty
           ? FirebaseFirestore.instance.collection('users').doc(otherUid).get()
