@@ -24,23 +24,22 @@ class AppHeader extends StatefulWidget {
 
 class _AppHeaderState extends State<AppHeader> with TickerProviderStateMixin {
   final _ctrl = TextEditingController();
-  bool _searching = false;
-  late AnimationController _glowController;
-  late Animation<double> _glowAnimation;
+  late final AnimationController _glowCtrl;
+  late final Animation<double> _glowAnim;
 
   @override
   void initState() {
     super.initState();
-    _glowController = AnimationController(
+    _glowCtrl = AnimationController(
       vsync: this,
       duration: const Duration(seconds: 2),
     )..repeat();
-    _glowAnimation = Tween<double>(begin: 0, end: 2 * pi).animate(_glowController);
+    _glowAnim = Tween<double>(begin: 0, end: 2 * pi).animate(_glowCtrl);
   }
 
   @override
   void dispose() {
-    _glowController.dispose();
+    _glowCtrl.dispose();
     _ctrl.dispose();
     super.dispose();
   }
@@ -49,87 +48,64 @@ class _AppHeaderState extends State<AppHeader> with TickerProviderStateMixin {
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final cardColor = isDark ? kCardDark : kCardLight;
+    final isFlux = widget.title == 'FLUX';
 
     return Container(
       decoration: BoxDecoration(
         color: cardColor,
         borderRadius: const BorderRadius.vertical(bottom: Radius.circular(28)),
-        boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.08), blurRadius: 16)],
+        boxShadow: [
+          BoxShadow(color: Colors.black.withOpacity(0.08), blurRadius: 20),
+        ],
       ),
       child: SafeArea(
         bottom: false,
         child: Padding(
-          padding: const EdgeInsets.fromLTRB(20, 8, 16, 14),
+          padding: const EdgeInsets.fromLTRB(20, 10, 16, 14),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Row(
                 children: [
-                  if (!_searching) ...[
+                  if (isFlux)
                     ShaderMask(
                       shaderCallback: (b) => kGradient.createShader(b),
                       child: Text(
-                        widget.title,
+                        'FLUX',
                         style: const TextStyle(
-                          fontSize: 26,
+                          fontSize: 38,
                           fontWeight: FontWeight.w900,
                           color: Colors.white,
                           fontStyle: FontStyle.italic,
                           letterSpacing: -1,
+                          height: 1,
                         ),
                       ),
-                    ),
-                    const Spacer(),
-                  ],
-                  if (_searching)
-                    Expanded(
-                      child: TextField(
-                        controller: _ctrl,
-                        autofocus: true,
-                        onChanged: widget.onSearch,
-                        style: const TextStyle(fontSize: 14),
-                        decoration: InputDecoration(
-                          hintText: widget.searchPlaceholder,
-                          hintStyle: TextStyle(color: Colors.grey.shade400, fontSize: 13),
-                          border: InputBorder.none,
-                          contentPadding: EdgeInsets.zero,
-                        ),
+                    )
+                  else
+                    Text(
+                      widget.title,
+                      style: TextStyle(
+                        fontSize: 22,
+                        fontWeight: FontWeight.w900,
+                        color: isDark ? Colors.white : const Color(0xFF111827),
+                        letterSpacing: -0.5,
                       ),
                     ),
-                  if (widget.showSearch)
-                    IconButton(
-                      onPressed: () {
-                        setState(() {
-                          _searching = !_searching;
-                          if (!_searching) {
-                            _ctrl.clear();
-                            widget.onSearch?.call('');
-                          }
-                        });
-                      },
-                      icon: Icon(
-                        _searching ? Icons.close : Icons.search_rounded,
-                        color: _searching ? kPrimary : Colors.grey,
-                      ),
-                    ),
+                  const Spacer(),
                   ...?widget.actions,
                 ],
               ),
               if (widget.showSearch) ...[
                 const SizedBox(height: 10),
                 AnimatedBuilder(
-                  animation: _glowAnimation,
-                  builder: (context, child) {
-                    return CustomPaint(
-                      painter: _GlowBorderPainter(
-                        angle: _glowAnimation.value,
-                        isDark: isDark,
-                      ),
-                      child: child,
-                    );
-                  },
+                  animation: _glowAnim,
+                  builder: (context, child) => CustomPaint(
+                    painter: _GlowBorderPainter(angle: _glowAnim.value, isDark: isDark),
+                    child: child,
+                  ),
                   child: Container(
-                    height: 42,
+                    height: 44,
                     margin: const EdgeInsets.all(2),
                     decoration: BoxDecoration(
                       color: isDark ? const Color(0xFF0F1729) : Colors.white,
@@ -152,6 +128,8 @@ class _AppHeaderState extends State<AppHeader> with TickerProviderStateMixin {
                                 fontSize: 12,
                               ),
                               border: InputBorder.none,
+                              fillColor: Colors.transparent,
+                              filled: true,
                               contentPadding: const EdgeInsets.symmetric(vertical: 12),
                             ),
                           ),
@@ -160,16 +138,12 @@ class _AppHeaderState extends State<AppHeader> with TickerProviderStateMixin {
                           onTap: () => widget.onSearch?.call(_ctrl.text),
                           child: Container(
                             margin: const EdgeInsets.all(5),
-                            width: 32,
-                            height: 32,
+                            width: 32, height: 32,
                             decoration: BoxDecoration(
                               gradient: kGradient,
                               borderRadius: BorderRadius.circular(12),
                               boxShadow: [
-                                BoxShadow(
-                                  color: kPrimary.withOpacity(0.3),
-                                  blurRadius: 8,
-                                ),
+                                BoxShadow(color: kPrimary.withOpacity(0.3), blurRadius: 8),
                               ],
                             ),
                             child: const Icon(Icons.arrow_forward_rounded,
@@ -192,14 +166,12 @@ class _AppHeaderState extends State<AppHeader> with TickerProviderStateMixin {
 class _GlowBorderPainter extends CustomPainter {
   final double angle;
   final bool isDark;
-
   _GlowBorderPainter({required this.angle, required this.isDark});
 
   @override
   void paint(Canvas canvas, Size size) {
     final rect = Rect.fromLTWH(0, 0, size.width, size.height);
     final rrect = RRect.fromRectAndRadius(rect, const Radius.circular(18));
-
     final gradient = SweepGradient(
       startAngle: angle,
       endAngle: angle + 2 * pi,
@@ -210,14 +182,14 @@ class _GlowBorderPainter extends CustomPainter {
         Color(0xFF833AB4),
       ],
     );
-
-    final paint = Paint()
-      ..shader = gradient.createShader(rect)
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 2
-      ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 4);
-
-    canvas.drawRRect(rrect, paint);
+    canvas.drawRRect(
+      rrect,
+      Paint()
+        ..shader = gradient.createShader(rect)
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = 2
+        ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 3),
+    );
   }
 
   @override

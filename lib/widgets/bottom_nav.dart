@@ -9,79 +9,81 @@ class BottomNav extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-
     final tabs = [
-      _Tab(icon: Icons.chat_bubble_rounded, label: 'CHATS', route: '/home'),
-      _Tab(icon: Icons.group_rounded,       label: 'GROUPS', route: '/groups'),
-      _Tab(icon: Icons.auto_awesome,        label: 'PEGASUS', route: '/bot'),
+      _Tab(icon: Icons.chat_bubble_rounded, label: 'Chats',  route: '/home'),
+      _Tab(icon: Icons.group_rounded,       label: 'Groups', route: '/groups'),
+      _Tab(icon: Icons.auto_awesome,        label: 'My Bot', route: '/bot'),
     ];
 
     return Positioned(
-      bottom: 16,
-      left: 0,
-      right: 0,
-      child: Center(
-        child: Container(
-          width: MediaQuery.of(context).size.width * 0.92,
-          padding: const EdgeInsets.all(6),
-          decoration: BoxDecoration(
-            color: (isDark ? kCardDark : kCardLight).withOpacity(0.85),
-            borderRadius: BorderRadius.circular(40),
-            border: Border.all(color: Colors.white.withOpacity(0.08)),
-            boxShadow: [
-              BoxShadow(color: Colors.black.withOpacity(0.3), blurRadius: 40, offset: const Offset(0, 10)),
-            ],
+      bottom: 0, left: 0, right: 0,
+      child: Container(
+        decoration: BoxDecoration(
+          color: (isDark ? kCardDark : kCardLight).withOpacity(0.95),
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
+          border: Border(
+            top:  BorderSide(color: Colors.grey.withOpacity(0.08)),
+            left: BorderSide(color: Colors.grey.withOpacity(0.08)),
+            right:BorderSide(color: Colors.grey.withOpacity(0.08)),
           ),
-          child: Row(
-            children: List.generate(tabs.length, (i) {
-              final active = currentIndex == i;
-              return Expanded(
-                child: GestureDetector(
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.15),
+              blurRadius: 30,
+              offset: const Offset(0, -8),
+            ),
+          ],
+        ),
+        child: SafeArea(
+          top: false,
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 8),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: List.generate(tabs.length, (i) {
+                final isActive = currentIndex == i;
+                return GestureDetector(
                   onTap: () => context.go(tabs[i].route),
                   child: AnimatedContainer(
-                    duration: const Duration(milliseconds: 300),
-                    curve: Curves.easeInOut,
-                    padding: const EdgeInsets.symmetric(vertical: 10),
-                    decoration: BoxDecoration(
-                      color: active ? (isDark ? kCardDark : Colors.white) : Colors.transparent,
-                      borderRadius: BorderRadius.circular(28),
-                      boxShadow: active
-                          ? [BoxShadow(color: Colors.black.withOpacity(0.1), blurRadius: 12)]
-                          : [],
-                    ),
+                    duration: const Duration(milliseconds: 200),
+                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                     child: Column(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        Icon(tabs[i].icon,
-                            size: 18,
-                            color: active ? kPrimary : Colors.grey.shade500),
-                        const SizedBox(height: 4),
+                        Icon(
+                          tabs[i].icon,
+                          size: 18,
+                          color: isActive ? kPrimary : Colors.grey.shade500,
+                        ),
+                        const SizedBox(height: 3),
                         Text(
                           tabs[i].label,
                           style: TextStyle(
                             fontSize: 8,
                             fontWeight: FontWeight.w900,
                             letterSpacing: 1.5,
-                            color: active ? kPrimary : Colors.grey.shade500,
+                            color: isActive ? kPrimary : Colors.grey.shade500,
                           ),
                         ),
-                        if (active)
-                          Container(
-                            margin: const EdgeInsets.only(top: 3),
-                            width: 24,
-                            height: 3,
-                            decoration: BoxDecoration(
-                              color: kPrimary,
-                              borderRadius: BorderRadius.circular(4),
-                              boxShadow: [BoxShadow(color: kPrimary.withOpacity(0.6), blurRadius: 8)],
-                            ),
+                        const SizedBox(height: 2),
+                        AnimatedContainer(
+                          duration: const Duration(milliseconds: 300),
+                          width: isActive ? 4 : 0,
+                          height: isActive ? 4 : 0,
+                          decoration: BoxDecoration(
+                            color: kPrimary,
+                            shape: BoxShape.circle,
+                            boxShadow: isActive
+                                ? [BoxShadow(color: kPrimary, blurRadius: 8)]
+                                : [],
                           ),
+                        ),
                       ],
                     ),
                   ),
-                ),
-              );
-            }),
+                );
+              }),
+            ),
           ),
         ),
       ),
@@ -93,5 +95,5 @@ class _Tab {
   final IconData icon;
   final String label;
   final String route;
-  _Tab({required this.icon, required this.label, required this.route});
+  const _Tab({required this.icon, required this.label, required this.route});
 }

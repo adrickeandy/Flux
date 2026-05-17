@@ -1,9 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
-const kPrimary = Color(0xFFE91E8C);
-const kPrimaryDark = Color(0xFFE91E8C);
-
+const kPrimary  = Color(0xFFE91E8C);
 const kBgLight  = Color(0xFFF5F8FF);
 const kBgDark   = Color(0xFF070C1A);
 const kCardLight = Color(0xFFFFFFFF);
@@ -29,7 +27,6 @@ ThemeData lightTheme() => ThemeData(
     displayColor: const Color(0xFF111827),
   ),
   inputDecorationTheme: _inputTheme(false),
-  appBarTheme: _appBarTheme(false),
   useMaterial3: true,
 );
 
@@ -47,23 +44,15 @@ ThemeData darkTheme() => ThemeData(
     displayColor: const Color(0xFFF0F4FF),
   ),
   inputDecorationTheme: _inputTheme(true),
-  appBarTheme: _appBarTheme(true),
   useMaterial3: true,
 );
 
 InputDecorationTheme _inputTheme(bool dark) => InputDecorationTheme(
   filled: true,
-  fillColor: dark ? const Color(0xFF0F1729) : Colors.white,
+  fillColor: dark ? kCardDark : Colors.white,
   border: OutlineInputBorder(
     borderRadius: BorderRadius.circular(20),
     borderSide: BorderSide.none,
   ),
   contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-);
-
-AppBarTheme _appBarTheme(bool dark) => AppBarTheme(
-  backgroundColor: dark ? kCardDark : kCardLight,
-  foregroundColor: dark ? Colors.white : const Color(0xFF111827),
-  elevation: 0,
-  centerTitle: false,
 );

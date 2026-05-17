@@ -4,9 +4,10 @@ class ChatModel {
   final String avatar;
   final String lastMessage;
   final String? lastMessageSenderId;
+  final String? lastMessageSenderName;
   final String? lastMessageStatus;
   final DateTime? lastMessageTimestamp;
-  final int unreadCount;
+  final dynamic unreadCount;
   final bool isGroup;
   final List<String> participants;
   final String? groupName;
@@ -19,6 +20,7 @@ class ChatModel {
     required this.avatar,
     required this.lastMessage,
     this.lastMessageSenderId,
+    this.lastMessageSenderName,
     this.lastMessageStatus,
     this.lastMessageTimestamp,
     this.unreadCount = 0,
@@ -30,24 +32,20 @@ class ChatModel {
   });
 
   factory ChatModel.fromMap(Map<String, dynamic> map, String id) {
-    final rawUnread = map['unreadCount'];
-    int unread = 0;
-    if (rawUnread is int) unread = rawUnread;
-
     DateTime? ts;
     if (map['lastMessageTimestamp'] != null) {
       try { ts = (map['lastMessageTimestamp'] as dynamic).toDate(); } catch (_) {}
     }
-
     return ChatModel(
       id: id,
       name: map['groupName'] ?? map['name'] ?? '',
       avatar: map['groupAvatar'] ?? map['avatar'] ?? '',
       lastMessage: map['lastMessage'] ?? '',
       lastMessageSenderId: map['lastMessageSenderId'],
+      lastMessageSenderName: map['lastMessageSenderName'],
       lastMessageStatus: map['lastMessageStatus'],
       lastMessageTimestamp: ts,
-      unreadCount: unread,
+      unreadCount: map['unreadCount'] ?? 0,
       isGroup: map['isGroup'] ?? false,
       participants: List<String>.from(map['participants'] ?? []),
       groupName: map['groupName'],

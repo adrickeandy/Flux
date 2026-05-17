@@ -35,15 +35,4 @@ class UserModel {
       lastSeen: lastSeen,
     );
   }
-
-  Map<String, dynamic> toMap() => {
-    'uid': uid,
-    'displayName': displayName,
-    'photoURL': photoURL,
-    'email': email,
-    'phoneNumber': phoneNumber,
-    'about': about,
-    'isOnline': isOnline,
-    'lastSeen': lastSeen,
-  };
 }

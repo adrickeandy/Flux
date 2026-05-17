@@ -3,15 +3,13 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import '../models/message_model.dart';
 import '../services/chat_service.dart';
-import '../theme/app_theme.dart';
 import '../widgets/chat_bubble.dart';
 import '../widgets/message_input.dart';
-import '../widgets/avatar_widget.dart';
+import '../widgets/chat_window_header.dart';
 
 class GroupChatScreen extends StatefulWidget {
   final String groupId;
   const GroupChatScreen({super.key, required this.groupId});
-
   @override
   State<GroupChatScreen> createState() => _GroupChatScreenState();
 }
@@ -26,7 +24,7 @@ class _GroupChatScreenState extends State<GroupChatScreen> {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (_scrollCtrl.hasClients) {
         _scrollCtrl.animateTo(_scrollCtrl.position.maxScrollExtent,
-            duration: const Duration(milliseconds: 300), curve: Curves.easeOut);
+          duration: const Duration(milliseconds: 300), curve: Curves.easeOut);
       }
     });
   }
@@ -42,24 +40,15 @@ class _GroupChatScreenState extends State<GroupChatScreen> {
         final memberCount = (data?['participants'] as List?)?.length ?? 0;
 
         return Scaffold(
-          appBar: AppBar(
-            leadingWidth: 48,
-            titleSpacing: 0,
-            leading: IconButton(
-              icon: const Icon(Icons.arrow_back_ios_rounded, size: 18),
-              onPressed: () => Navigator.of(context).pop(),
+          appBar: PreferredSize(
+            preferredSize: const Size.fromHeight(64),
+            child: ChatWindowHeader(
+              name: groupName,
+              avatar: groupAvatar,
+              subtitle: '$memberCount MEMBERS',
+              id: widget.groupId,
+              isGroup: true,
             ),
-            title: Row(children: [
-              AvatarWidget(url: groupAvatar, name: groupName, size: 38),
-              const SizedBox(width: 10),
-              Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                Text(groupName, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w800)),
-                Text('$memberCount members', style: TextStyle(fontSize: 10, color: Colors.grey.shade500)),
-              ]),
-            ]),
-            actions: [
-              IconButton(icon: const Icon(Icons.more_vert_rounded), onPressed: () {}),
-            ],
           ),
           body: Column(
             children: [
@@ -69,7 +58,6 @@ class _GroupChatScreenState extends State<GroupChatScreen> {
                   builder: (_, snap) {
                     final msgs = snap.data ?? [];
                     WidgetsBinding.instance.addPostFrameCallback((_) => _scrollToBottom());
-
                     return ListView.builder(
                       controller: _scrollCtrl,
                       padding: const EdgeInsets.symmetric(vertical: 12),
@@ -77,23 +65,14 @@ class _GroupChatScreenState extends State<GroupChatScreen> {
                       itemBuilder: (_, i) {
                         final msg = msgs[i];
                         final isMe = msg.senderId == _uid;
-                        final showTail = i == msgs.length - 1 || msgs[i + 1].senderId != msg.senderId;
-
-                        return Column(
-                          crossAxisAlignment: isMe ? CrossAxisAlignment.end : CrossAxisAlignment.start,
-                          children: [
-                            if (!isMe && showTail)
-                              Padding(
-                                padding: const EdgeInsets.only(left: 14, bottom: 2),
-                                child: Text(msg.senderName ?? '',
-                                    style: TextStyle(fontSize: 10, color: kPrimary, fontWeight: FontWeight.w800)),
-                              ),
-                            ChatBubble(
-                              message: msg, isMe: isMe, showTail: showTail,
-                              onReply: () => setState(() => _replyingTo = msg),
-                              onReact: (e) => _chatService.addReaction(widget.groupId, msg.id, e),
-                            ),
-                          ],
+                        final showTail = i == msgs.length - 1 ||
+                            msgs[i + 1].senderId != msg.senderId;
+                        return ChatBubble(
+                          message: msg, isMe: isMe,
+                          showAvatar: !isMe && showTail,
+                          showTail: showTail,
+                          onReply: () => setState(() => _replyingTo = msg),
+                          onReact: (e) => _chatService.addReaction(widget.groupId, msg.id, e),
                         );
                       },
                     );
@@ -104,19 +83,13 @@ class _GroupChatScreenState extends State<GroupChatScreen> {
                 replyingTo: _replyingTo,
                 onCancelReply: () => setState(() => _replyingTo = null),
                 onTyping: () => _chatService.setTyping(widget.groupId),
-                onSend: (content, type, {file, replyTo}) async {
+                onSend: (content, type, {file, audioDuration, replyTo}) async {
                   String? mediaUrl;
-                  if (file != null) {
-                    mediaUrl = await _chatService.uploadFile(file);
-                  }
+                  if (file != null) mediaUrl = await _chatService.uploadFile(file);
                   _chatService.sendMessage(
-                    chatDocId: widget.groupId,
-                    otherUserId: '',
-                    isGroup: true,
-                    content: content,
-                    type: type,
-                    mediaUrl: mediaUrl,
-                    replyTo: replyTo,
+                    chatDocId: widget.groupId, otherUserId: '',
+                    isGroup: true, content: content, type: type,
+                    mediaUrl: mediaUrl, audioDuration: audioDuration, replyTo: replyTo,
                   );
                   setState(() => _replyingTo = null);
                   _scrollToBottom();

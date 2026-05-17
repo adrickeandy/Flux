@@ -18,8 +18,3 @@ String initials(String name) {
   if (name.isNotEmpty) return name.substring(0, name.length.clamp(0, 2)).toUpperCase();
   return '??';
 }
-
-String formatUgandaPhone(String val) {
-  if (val.startsWith('0')) return '+256${val.substring(1)}';
-  return val;
-}

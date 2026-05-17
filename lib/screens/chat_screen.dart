@@ -4,15 +4,13 @@ import 'package:firebase_auth/firebase_auth.dart';
 import '../models/message_model.dart';
 import '../models/user_model.dart';
 import '../services/chat_service.dart';
-import '../theme/app_theme.dart';
 import '../widgets/chat_bubble.dart';
 import '../widgets/message_input.dart';
-import '../widgets/avatar_widget.dart';
+import '../widgets/chat_window_header.dart';
 
 class ChatScreen extends StatefulWidget {
   final String userId;
   const ChatScreen({super.key, required this.userId});
-
   @override
   State<ChatScreen> createState() => _ChatScreenState();
 }
@@ -24,7 +22,6 @@ class _ChatScreenState extends State<ChatScreen> {
   MessageModel? _replyingTo;
   bool _showSearch = false;
   String _searchQuery = '';
-
   late final String _chatDocId;
 
   @override
@@ -38,7 +35,7 @@ class _ChatScreenState extends State<ChatScreen> {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (_scrollCtrl.hasClients) {
         _scrollCtrl.animateTo(_scrollCtrl.position.maxScrollExtent,
-            duration: const Duration(milliseconds: 300), curve: Curves.easeOut);
+          duration: const Duration(milliseconds: 300), curve: Curves.easeOut);
       }
     });
   }
@@ -50,14 +47,24 @@ class _ChatScreenState extends State<ChatScreen> {
       builder: (_, userSnap) {
         UserModel? other;
         if (userSnap.hasData && userSnap.data!.exists) {
-          other = UserModel.fromMap(userSnap.data!.data() as Map<String, dynamic>, widget.userId);
+          other = UserModel.fromMap(
+              userSnap.data!.data() as Map<String, dynamic>, widget.userId);
         }
 
+        final subtitle = other?.isOnline == true ? 'ONLINE' : (other?.about ?? '');
+
         return Scaffold(
-          appBar: _buildAppBar(other),
+          appBar: PreferredSize(
+            preferredSize: const Size.fromHeight(64),
+            child: ChatWindowHeader(
+              name: other?.displayName ?? '...',
+              avatar: other?.photoURL,
+              subtitle: subtitle,
+              id: widget.userId,
+            ),
+          ),
           body: Column(
             children: [
-              // Search bar
               if (_showSearch)
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
@@ -70,15 +77,13 @@ class _ChatScreenState extends State<ChatScreen> {
                       suffixIcon: IconButton(
                         icon: const Icon(Icons.close, size: 18),
                         onPressed: () => setState(() {
-                          _showSearch = false;
-                          _searchQuery = '';
+                          _showSearch = false; _searchQuery = '';
                         }),
                       ),
                     ),
                   ),
                 ),
 
-              // Messages
               Expanded(
                 child: StreamBuilder<List<MessageModel>>(
                   stream: _chatService.messagesStream(_chatDocId),
@@ -88,14 +93,13 @@ class _ChatScreenState extends State<ChatScreen> {
                         ? msgs
                         : msgs.where((m) => m.content.toLowerCase()
                             .contains(_searchQuery.toLowerCase())).toList();
-
                     WidgetsBinding.instance.addPostFrameCallback((_) => _scrollToBottom());
 
                     if (filtered.isEmpty) {
                       return Center(
                         child: Column(mainAxisSize: MainAxisSize.min, children: [
-                          Icon(Icons.chat_bubble_outline_rounded,
-                              size: 48, color: Colors.grey.shade300),
+                          Icon(Icons.chat_bubble_outline_rounded, size: 48,
+                              color: Colors.grey.shade300),
                           const SizedBox(height: 12),
                           Text('Say hello 👋',
                               style: TextStyle(color: Colors.grey.shade400, fontSize: 13)),
@@ -114,14 +118,11 @@ class _ChatScreenState extends State<ChatScreen> {
                             filtered[i + 1].senderId != msg.senderId;
 
                         return ChatBubble(
-                          message: msg,
-                          isMe: isMe,
-                          showTail: showTail,
+                          message: msg, isMe: isMe, showTail: showTail,
                           onReply: () => setState(() => _replyingTo = msg),
                           onStar: () => _chatService.toggleStar(
                               _chatDocId, msg.id, msg.isStarred),
-                          onReact: (e) =>
-                              _chatService.addReaction(_chatDocId, msg.id, e),
+                          onReact: (e) => _chatService.addReaction(_chatDocId, msg.id, e),
                         );
                       },
                     );
@@ -129,24 +130,17 @@ class _ChatScreenState extends State<ChatScreen> {
                 ),
               ),
 
-              // Input
               MessageInput(
                 replyingTo: _replyingTo,
                 onCancelReply: () => setState(() => _replyingTo = null),
                 onTyping: () => _chatService.setTyping(_chatDocId),
-                onSend: (content, type, {file, replyTo}) async {
+                onSend: (content, type, {file, audioDuration, replyTo}) async {
                   String? mediaUrl;
-                  if (file != null) {
-                    mediaUrl = await _chatService.uploadFile(file);
-                  }
+                  if (file != null) mediaUrl = await _chatService.uploadFile(file);
                   _chatService.sendMessage(
-                    chatDocId: _chatDocId,
-                    content: content,
-                    type: type,
-                    mediaUrl: mediaUrl,
-                    replyTo: replyTo,
-                    otherUserId: widget.userId,
-                    isGroup: false,
+                    chatDocId: _chatDocId, content: content, type: type,
+                    mediaUrl: mediaUrl, audioDuration: audioDuration,
+                    replyTo: replyTo, otherUserId: widget.userId, isGroup: false,
                   );
                   setState(() => _replyingTo = null);
                   _scrollToBottom();
@@ -156,51 +150,6 @@ class _ChatScreenState extends State<ChatScreen> {
           ),
         );
       },
-    );
-  }
-
-  PreferredSizeWidget _buildAppBar(UserModel? other) {
-    return AppBar(
-      leadingWidth: 48,
-      titleSpacing: 0,
-      leading: IconButton(
-        icon: const Icon(Icons.arrow_back_ios_rounded, size: 18),
-        onPressed: () => Navigator.of(context).pop(),
-      ),
-      title: Row(
-        children: [
-          AvatarWidget(
-            url: other?.photoURL,
-            name: other?.displayName ?? '...',
-            size: 38,
-            isOnline: other?.isOnline ?? false,
-          ),
-          const SizedBox(width: 10),
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(other?.displayName ?? '...',
-                  style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w800)),
-              Text(
-                other?.isOnline == true ? 'Online' : (other?.about ?? ''),
-                style: TextStyle(
-                    fontSize: 10,
-                    color: other?.isOnline == true
-                        ? const Color(0xFF22C55E)
-                        : Colors.grey.shade500),
-              ),
-            ],
-          ),
-        ],
-      ),
-      actions: [
-        IconButton(
-          icon: Icon(Icons.search_rounded, color: _showSearch ? kPrimary : null),
-          onPressed: () => setState(() => _showSearch = !_showSearch),
-        ),
-        IconButton(
-            icon: const Icon(Icons.more_vert_rounded), onPressed: () {}),
-      ],
     );
   }
 }

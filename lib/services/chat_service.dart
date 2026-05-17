@@ -1,56 +1,44 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'dart:io';
 import '../models/message_model.dart';
 import 'package:cloudinary_public/cloudinary_public.dart';
-import 'dart:io';
 
 class ChatService {
-  final _db = FirebaseFirestore.instance;
+  final _db   = FirebaseFirestore.instance;
   final _auth = FirebaseAuth.instance;
-  final _cloudinary = CloudinaryPublic('17c886bc-bd42-4773-9c60-905a759b585d', 'Flux pro', cache: false);
+  final _cloudinary = CloudinaryPublic(
+    'YOUR_CLOUD_NAME', 'YOUR_UPLOAD_PRESET', cache: false);
 
   String get _uid => _auth.currentUser!.uid;
 
-  // Get chat ID for two users
   String chatId(String otherUid) {
     final ids = [_uid, otherUid]..sort();
     return ids.join('_');
   }
 
-  // Stream messages for a chat
   Stream<List<MessageModel>> messagesStream(String chatDocId) {
     return _db
-        .collection('chats')
-        .doc(chatDocId)
-        .collection('messages')
+        .collection('chats').doc(chatDocId).collection('messages')
         .orderBy('timestamp', descending: false)
         .snapshots()
-        .map((snap) => snap.docs
-            .map((d) => MessageModel.fromMap(d.data(), d.id))
-            .toList());
+        .map((s) => s.docs.map((d) => MessageModel.fromMap(d.data(), d.id)).toList());
   }
 
-  // Stream all private chats for current user
-  Stream<QuerySnapshot> chatsStream() {
-    return _db
-        .collection('chats')
-        .where('participants', arrayContains: _uid)
-        .where('isGroup', isEqualTo: false)
-        .orderBy('lastMessageTimestamp', descending: true)
-        .snapshots();
-  }
+  Stream<QuerySnapshot> chatsStream() => _db
+      .collection('chats')
+      .where('participants', arrayContains: _uid)
+      .where('isGroup', isEqualTo: false)
+      .orderBy('lastMessageTimestamp', descending: true)
+      .snapshots();
 
-  // Stream all group chats for current user
-  Stream<QuerySnapshot> groupsStream() {
-    return _db
-        .collection('chats')
-        .where('participants', arrayContains: _uid)
-        .where('isGroup', isEqualTo: true)
-        .orderBy('lastMessageTimestamp', descending: true)
-        .snapshots();
-  }
+  Stream<QuerySnapshot> groupsStream() => _db
+      .collection('chats')
+      .where('participants', arrayContains: _uid)
+      .where('isGroup', isEqualTo: true)
+      .orderBy('lastMessageTimestamp', descending: true)
+      .snapshots();
 
-  // Send a message
   Future<void> sendMessage({
     required String chatDocId,
     required String content,
@@ -58,14 +46,12 @@ class ChatService {
     String? mediaUrl,
     String? fileName,
     String? fileSize,
+    double? audioDuration,
     ReplyInfo? replyTo,
-    PollMeta? poll,
     required String otherUserId,
     required bool isGroup,
   }) async {
     final user = _auth.currentUser!;
-    final msgRef = _db.collection('chats').doc(chatDocId).collection('messages');
-
     final msg = {
       'senderId': _uid,
       'senderName': user.displayName,
@@ -77,41 +63,33 @@ class ChatService {
       if (mediaUrl != null) 'mediaUrl': mediaUrl,
       if (fileName != null) 'fileName': fileName,
       if (fileSize != null) 'fileSize': fileSize,
+      if (audioDuration != null) 'audioDuration': audioDuration,
       'reactions': [],
       'isStarred': false,
       if (replyTo != null) 'replyTo': replyTo.toMap(),
-      if (poll != null) 'meta': poll.toMap(),
     };
-
-    await msgRef.add(msg);
-
-    // Update chat document
+    await _db.collection('chats').doc(chatDocId).collection('messages').add(msg);
     final chatUpdate = {
       'lastMessage': type == 'text' ? content : '📎 $type',
       'lastMessageSenderId': _uid,
+      'lastMessageSenderName': user.displayName,
       'lastMessageStatus': 'sent',
       'lastMessageTimestamp': FieldValue.serverTimestamp(),
-      'participants': isGroup ? FieldValue.arrayUnion([]) : FieldValue.arrayUnion([_uid, otherUserId]),
       'isGroup': isGroup,
     };
-
     if (!isGroup) {
       chatUpdate['unreadCount.$otherUserId'] = FieldValue.increment(1) as dynamic;
+      chatUpdate['participants'] = FieldValue.arrayUnion([_uid, otherUserId]) as dynamic;
     }
-
     await _db.collection('chats').doc(chatDocId).set(chatUpdate, SetOptions(merge: true));
   }
 
-  // Mark messages as read
   Future<void> markAsRead(String chatDocId) async {
-    final snap = await _db
-        .collection('chats')
-        .doc(chatDocId)
+    final snap = await _db.collection('chats').doc(chatDocId)
         .collection('messages')
         .where('senderId', isNotEqualTo: _uid)
         .where('status', isNotEqualTo: 'read')
         .get();
-
     final batch = _db.batch();
     for (final doc in snap.docs) {
       batch.update(doc.reference, {'status': 'read'});
@@ -123,52 +101,53 @@ class ChatService {
     await batch.commit();
   }
 
-  // Toggle star
-  Future<void> toggleStar(String chatDocId, String messageId, bool current) {
-    return _db
-        .collection('chats')
-        .doc(chatDocId)
-        .collection('messages')
-        .doc(messageId)
-        .update({'isStarred': !current});
-  }
+  Future<void> toggleStar(String chatDocId, String msgId, bool current) =>
+      _db.collection('chats').doc(chatDocId).collection('messages').doc(msgId)
+          .update({'isStarred': !current});
 
-  // Add reaction
-  Future<void> addReaction(String chatDocId, String messageId, String emoji) {
-    return _db
-        .collection('chats')
-        .doc(chatDocId)
-        .collection('messages')
-        .doc(messageId)
-        .update({'reactions': FieldValue.arrayUnion([emoji])});
-  }
+  Future<void> addReaction(String chatDocId, String msgId, String emoji) =>
+      _db.collection('chats').doc(chatDocId).collection('messages').doc(msgId)
+          .update({'reactions': FieldValue.arrayUnion([emoji])});
 
-  // Toggle archive
-  Future<void> toggleArchive(String chatDocId, bool isArchived) {
-    return _db.collection('chats').doc(chatDocId).update({
-      'archivedBy': isArchived
-          ? FieldValue.arrayRemove([_uid])
-          : FieldValue.arrayUnion([_uid]),
-    });
-  }
+  Future<void> toggleArchive(String chatDocId, bool isArchived) =>
+      _db.collection('chats').doc(chatDocId).update({
+        'archivedBy': isArchived
+            ? FieldValue.arrayRemove([_uid])
+            : FieldValue.arrayUnion([_uid]),
+      });
 
-  // Update typing status
-  Future<void> setTyping(String chatDocId) {
-    return _db.collection('chats').doc(chatDocId).set({
-      'typingStatus': {_uid: DateTime.now().millisecondsSinceEpoch}
-    }, SetOptions(merge: true));
-  }
+  Future<void> setTyping(String chatDocId) =>
+      _db.collection('chats').doc(chatDocId).set({
+        'typingStatus': {_uid: DateTime.now().millisecondsSinceEpoch}
+      }, SetOptions(merge: true));
 
-  // Upload file to Cloudinary
   Future<String> uploadFile(File file) async {
     try {
-      final response = await _cloudinary.uploadFile(
-        CloudinaryFile.fromFile(file.path, resourceType: CloudinaryResourceType.Image),
+      final res = await _cloudinary.uploadFile(
+        CloudinaryFile.fromFile(file.path, resourceType: CloudinaryResourceType.Auto),
       );
-      return response.secureUrl;
+      return res.secureUrl;
     } catch (e) {
-      print(e);
       return '';
     }
+  }
+
+  Future<void> createGroup({
+    required String name,
+    required List<String> memberIds,
+    String? avatarUrl,
+  }) async {
+    final participants = [...memberIds, _uid];
+    await _db.collection('chats').add({
+      'groupName': name,
+      'groupAvatar': avatarUrl,
+      'isGroup': true,
+      'participants': participants,
+      'lastMessage': 'Group created',
+      'lastMessageTimestamp': FieldValue.serverTimestamp(),
+      'archivedBy': [],
+      'createdBy': _uid,
+      'createdAt': FieldValue.serverTimestamp(),
+    });
   }
 }

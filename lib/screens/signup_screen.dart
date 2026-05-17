@@ -5,7 +5,6 @@ import '../theme/app_theme.dart';
 
 class SignupScreen extends StatefulWidget {
   const SignupScreen({super.key});
-
   @override
   State<SignupScreen> createState() => _SignupScreenState();
 }
@@ -52,7 +51,7 @@ class _SignupScreenState extends State<SignupScreen> {
         setState(() => _errors = {'email': 'This email is already registered'});
       else
         ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text(msg), behavior: SnackBarBehavior.floating));
+          SnackBar(content: Text(msg), behavior: SnackBarBehavior.floating));
     } finally {
       if (mounted) setState(() => _loading = false);
     }
@@ -66,52 +65,50 @@ class _SignupScreenState extends State<SignupScreen> {
           padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 24),
           child: Column(
             children: [
-              Row(
-                children: [
-                  IconButton(
-                    icon: const Icon(Icons.arrow_back_ios_rounded),
-                    onPressed: () => context.go('/login'),
-                  ),
-                  const SizedBox(width: 8),
-                  ShaderMask(
-                    shaderCallback: (b) => kGradient.createShader(b),
-                    child: const Text('CREATE ACCOUNT',
-                        style: TextStyle(fontSize: 18, fontWeight: FontWeight.w900,
-                            color: Colors.white, letterSpacing: 1)),
-                  ),
-                ],
-              ),
+              Row(children: [
+                IconButton(
+                  icon: const Icon(Icons.arrow_back_ios_rounded),
+                  onPressed: () => context.go('/login'),
+                ),
+                const SizedBox(width: 8),
+                ShaderMask(
+                  shaderCallback: (b) => kGradient.createShader(b),
+                  child: const Text('CREATE ACCOUNT',
+                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.w900,
+                        color: Colors.white, letterSpacing: 1)),
+                ),
+              ]),
               const SizedBox(height: 28),
-
-              _field('FULL NAME',    _nameCtrl,    'Your name',         _errors['name']),
+              _field('FULL NAME', _nameCtrl, 'Your name', _errors['name']),
               const SizedBox(height: 16),
               _phoneField(),
               const SizedBox(height: 16),
-              _field('EMAIL',        _emailCtrl,   'email@example.com', _errors['email'], type: TextInputType.emailAddress),
+              _field('EMAIL', _emailCtrl, 'email@example.com', _errors['email'],
+                  type: TextInputType.emailAddress),
               const SizedBox(height: 16),
-              _passField('PASSWORD', _passCtrl, _showPass, () => setState(() => _showPass = !_showPass), _errors['password']),
+              _passField('PASSWORD', _passCtrl, _showPass,
+                  () => setState(() => _showPass = !_showPass), _errors['password']),
               const SizedBox(height: 16),
-              _passField('CONFIRM PASSWORD', _confirmCtrl, _showConfirm, () => setState(() => _showConfirm = !_showConfirm), _errors['confirm']),
+              _passField('CONFIRM PASSWORD', _confirmCtrl, _showConfirm,
+                  () => setState(() => _showConfirm = !_showConfirm), _errors['confirm']),
               const SizedBox(height: 32),
-
-              SizedBox(
-                width: double.infinity, height: 54,
-                child: DecoratedBox(
+              GestureDetector(
+                onTap: _loading ? null : _signUp,
+                child: Container(
+                  width: double.infinity, height: 54,
                   decoration: BoxDecoration(
                     gradient: kGradient,
                     borderRadius: BorderRadius.circular(20),
-                    boxShadow: [BoxShadow(color: kPrimary.withOpacity(0.4), blurRadius: 20, offset: const Offset(0, 8))],
+                    boxShadow: [BoxShadow(color: kPrimary.withOpacity(0.4),
+                        blurRadius: 20, offset: const Offset(0, 8))],
                   ),
-                  child: ElevatedButton(
-                    style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.transparent, shadowColor: Colors.transparent,
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20))),
-                    onPressed: _loading ? null : _signUp,
-                    child: _loading
-                        ? const CircularProgressIndicator(color: Colors.white, strokeWidth: 2)
-                        : const Text('CREATE ACCOUNT',
-                            style: TextStyle(fontWeight: FontWeight.w900, letterSpacing: 2, fontSize: 11, color: Colors.white)),
-                  ),
+                  alignment: Alignment.center,
+                  child: _loading
+                      ? const SizedBox(width: 22, height: 22,
+                          child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
+                      : const Text('CREATE ACCOUNT',
+                          style: TextStyle(fontWeight: FontWeight.w900,
+                              letterSpacing: 2, fontSize: 11, color: Colors.white)),
                 ),
               ),
               const SizedBox(height: 20),
@@ -120,8 +117,10 @@ class _SignupScreenState extends State<SignupScreen> {
                 child: RichText(text: TextSpan(
                   text: 'Already have an account? ',
                   style: TextStyle(color: Colors.grey.shade500, fontSize: 12),
-                  children: [TextSpan(text: 'LOG IN',
-                      style: TextStyle(color: kPrimary, fontWeight: FontWeight.w900, letterSpacing: 2))],
+                  children: [
+                    TextSpan(text: 'LOG IN',
+                      style: TextStyle(color: kPrimary, fontWeight: FontWeight.w900, letterSpacing: 2)),
+                  ],
                 )),
               ),
             ],
@@ -131,50 +130,54 @@ class _SignupScreenState extends State<SignupScreen> {
     );
   }
 
-  Widget _field(String label, TextEditingController ctrl, String hint, String? error, {TextInputType type = TextInputType.text}) {
-    return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-      Text(label, style: TextStyle(fontSize: 9, fontWeight: FontWeight.w900, color: kPrimary, letterSpacing: 2)),
+  Widget _field(String label, TextEditingController ctrl, String hint,
+      String? error, {TextInputType type = TextInputType.text}) =>
+    Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+      Text(label, style: TextStyle(fontSize: 9, fontWeight: FontWeight.w900,
+          color: kPrimary, letterSpacing: 2)),
       const SizedBox(height: 6),
       TextField(controller: ctrl, keyboardType: type,
-          style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w700),
-          decoration: InputDecoration(hintText: hint, errorText: error)),
+        style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w700),
+        decoration: InputDecoration(hintText: hint, errorText: error)),
     ]);
-  }
 
-  Widget _phoneField() {
-    return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-      Text('PHONE NUMBER', style: TextStyle(fontSize: 9, fontWeight: FontWeight.w900, color: kPrimary, letterSpacing: 2)),
-      const SizedBox(height: 6),
-      Stack(alignment: Alignment.centerLeft, children: [
-        TextField(controller: _phoneCtrl, keyboardType: TextInputType.phone,
-            style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w700),
-            decoration: InputDecoration(
-                hintText: '07XXXXXXXX',
-                contentPadding: const EdgeInsets.fromLTRB(88, 14, 16, 14),
-                errorText: _errors['phone'])),
-        Padding(padding: const EdgeInsets.only(left: 14),
-          child: Row(mainAxisSize: MainAxisSize.min, children: [
-            const Text('🇺🇬', style: TextStyle(fontSize: 18)),
-            const SizedBox(width: 6),
-            Text('+256', style: TextStyle(fontWeight: FontWeight.w700, color: Colors.grey.shade600, fontSize: 13)),
-          ]),
-        ),
-      ]),
-    ]);
-  }
+  Widget _phoneField() => Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+    Text('PHONE NUMBER', style: TextStyle(fontSize: 9, fontWeight: FontWeight.w900,
+        color: kPrimary, letterSpacing: 2)),
+    const SizedBox(height: 6),
+    Stack(alignment: Alignment.centerLeft, children: [
+      TextField(controller: _phoneCtrl, keyboardType: TextInputType.phone,
+        style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w700),
+        decoration: InputDecoration(
+          hintText: '07XXXXXXXX',
+          contentPadding: const EdgeInsets.fromLTRB(88, 14, 16, 14),
+          errorText: _errors['phone'],
+        )),
+      Padding(padding: const EdgeInsets.only(left: 14),
+        child: Row(mainAxisSize: MainAxisSize.min, children: [
+          const Text('🇺🇬', style: TextStyle(fontSize: 18)),
+          const SizedBox(width: 6),
+          Text('+256', style: TextStyle(fontWeight: FontWeight.w700,
+              color: Colors.grey.shade600, fontSize: 13)),
+        ])),
+    ]),
+  ]);
 
-  Widget _passField(String label, TextEditingController ctrl, bool show, VoidCallback toggle, String? error) {
-    return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-      Text(label, style: TextStyle(fontSize: 9, fontWeight: FontWeight.w900, color: kPrimary, letterSpacing: 2)),
+  Widget _passField(String label, TextEditingController ctrl,
+      bool show, VoidCallback toggle, String? error) =>
+    Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+      Text(label, style: TextStyle(fontSize: 9, fontWeight: FontWeight.w900,
+          color: kPrimary, letterSpacing: 2)),
       const SizedBox(height: 6),
       TextField(controller: ctrl, obscureText: !show,
-          style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w700),
-          decoration: InputDecoration(
-              hintText: 'Enter password',
-              errorText: error,
-              suffixIcon: IconButton(
-                  icon: Icon(show ? Icons.visibility_off : Icons.visibility, size: 20, color: Colors.grey),
-                  onPressed: toggle))),
+        style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w700),
+        decoration: InputDecoration(
+          hintText: 'Enter password', errorText: error,
+          suffixIcon: IconButton(
+            icon: Icon(show ? Icons.visibility_off : Icons.visibility,
+                size: 20, color: Colors.grey),
+            onPressed: toggle,
+          ),
+        )),
     ]);
-  }
 }

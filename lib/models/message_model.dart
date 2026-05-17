@@ -5,15 +5,15 @@ class MessageModel {
   final String? senderAvatar;
   final String content;
   final DateTime timestamp;
-  final String status; // sending | sent | delivered | read
-  final String type;   // text | image | video | audio | document | poll
+  final String status;
+  final String type;
   final String? mediaUrl;
   final String? fileName;
   final String? fileSize;
+  final double? audioDuration;
   final List<String> reactions;
   final bool isStarred;
   final ReplyInfo? replyTo;
-  final PollMeta? poll;
 
   MessageModel({
     required this.id,
@@ -27,10 +27,10 @@ class MessageModel {
     this.mediaUrl,
     this.fileName,
     this.fileSize,
+    this.audioDuration,
     this.reactions = const [],
     this.isStarred = false,
     this.replyTo,
-    this.poll,
   });
 
   factory MessageModel.fromMap(Map<String, dynamic> map, String id) {
@@ -48,12 +48,10 @@ class MessageModel {
       mediaUrl: map['mediaUrl'],
       fileName: map['fileName'],
       fileSize: map['fileSize'],
+      audioDuration: (map['audioDuration'] as num?)?.toDouble(),
       reactions: List<String>.from(map['reactions'] ?? []),
       isStarred: map['isStarred'] ?? false,
       replyTo: map['replyTo'] != null ? ReplyInfo.fromMap(map['replyTo']) : null,
-      poll: map['meta'] != null && map['type'] == 'poll'
-          ? PollMeta.fromMap(map['meta'])
-          : null,
     );
   }
 
@@ -65,72 +63,55 @@ class MessageModel {
     'timestamp': timestamp,
     'status': status,
     'type': type,
-    'mediaUrl': mediaUrl,
-    'fileName': fileName,
-    'fileSize': fileSize,
+    if (mediaUrl != null) 'mediaUrl': mediaUrl,
+    if (fileName != null) 'fileName': fileName,
+    if (fileSize != null) 'fileSize': fileSize,
+    if (audioDuration != null) 'audioDuration': audioDuration,
     'reactions': reactions,
     'isStarred': isStarred,
     if (replyTo != null) 'replyTo': replyTo!.toMap(),
-    if (poll != null) 'meta': poll!.toMap(),
   };
 
   MessageModel copyWith({
-    String? id,
-    String? senderId,
-    String? senderName,
-    String? senderAvatar,
-    String? content,
-    DateTime? timestamp,
     String? status,
-    String? type,
-    String? mediaUrl,
-    String? fileName,
-    String? fileSize,
+    String? content,
     List<String>? reactions,
     bool? isStarred,
-    ReplyInfo? replyTo,
-    PollMeta? poll,
-  }) {
-    return MessageModel(
-      id: id ?? this.id,
-      senderId: senderId ?? this.senderId,
-      senderName: senderName ?? this.senderName,
-      senderAvatar: senderAvatar ?? this.senderAvatar,
-      content: content ?? this.content,
-      timestamp: timestamp ?? this.timestamp,
-      status: status ?? this.status,
-      type: type ?? this.type,
-      mediaUrl: mediaUrl ?? this.mediaUrl,
-      fileName: fileName ?? this.fileName,
-      fileSize: fileSize ?? this.fileSize,
-      reactions: reactions ?? this.reactions,
-      isStarred: isStarred ?? this.isStarred,
-      replyTo: replyTo ?? this.replyTo,
-      poll: poll ?? this.poll,
-    );
-  }
+  }) => MessageModel(
+    id: id,
+    senderId: senderId,
+    senderName: senderName,
+    senderAvatar: senderAvatar,
+    content: content ?? this.content,
+    timestamp: timestamp,
+    status: status ?? this.status,
+    type: type,
+    mediaUrl: mediaUrl,
+    fileName: fileName,
+    fileSize: fileSize,
+    audioDuration: audioDuration,
+    reactions: reactions ?? this.reactions,
+    isStarred: isStarred ?? this.isStarred,
+    replyTo: replyTo,
+  );
 }
 
 class ReplyInfo {
   final String id;
   final String senderName;
   final String content;
-  ReplyInfo({required this.id, required this.senderName, required this.content});
-  factory ReplyInfo.fromMap(Map m) => ReplyInfo(
-    id: m['id'] ?? '', senderName: m['senderName'] ?? '', content: m['content'] ?? '');
-  Map<String, dynamic> toMap() => {'id': id, 'senderName': senderName, 'content': content};
-}
 
-class PollMeta {
-  final List<String> options;
-  final Map<String, List<String>> votes;
-  PollMeta({required this.options, required this.votes});
-  factory PollMeta.fromMap(Map m) {
-    final rawVotes = (m['votes'] as Map?) ?? {};
-    return PollMeta(
-      options: List<String>.from(m['options'] ?? []),
-      votes: rawVotes.map((k, v) => MapEntry(k.toString(), List<String>.from(v ?? []))),
-    );
-  }
-  Map<String, dynamic> toMap() => {'options': options, 'votes': votes};
+  ReplyInfo({required this.id, required this.senderName, required this.content});
+
+  factory ReplyInfo.fromMap(Map m) => ReplyInfo(
+    id: m['id'] ?? '',
+    senderName: m['senderName'] ?? '',
+    content: m['content'] ?? '',
+  );
+
+  Map<String, dynamic> toMap() => {
+    'id': id,
+    'senderName': senderName,
+    'content': content,
+  };
 }
