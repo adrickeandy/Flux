@@ -1,0 +1,50 @@
+name: flux
+description: FLUX — Messaging Reimagined
+publish_to: 'none' # I am a comment
+version: 1.0.0+1
+
+environment:
+  sdk: '>=3.0.0 <4.0.0'
+
+dependencies:
+  flutter:
+    sdk: flutter
+
+  # Firebase
+  firebase_core:
+  firebase_auth:
+  cloud_firestore:
+  firebase_storage:
+
+  # State & routing
+  provider:
+  go_router:
+
+  # UI & media
+  cached_network_image:
+  image_picker:
+  photo_view:
+  emoji_picker_flutter:
+  flutter_sound:
+  permission_handler:
+  shimmer:
+  flutter_animate:
+  google_fonts:
+  file_picker:
+  url_launcher:
+  shared_preferences:
+  uuid:
+  http:
+  intl:
+  path_provider:
+  cupertino_icons:
+  firebase_ai:
+  cloudinary_public:
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints:
+
+flutter:
+  uses-material-design: true

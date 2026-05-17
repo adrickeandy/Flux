@@ -1,0 +1,12 @@
+node_modules/
+build/
+dist/
+.dart_tool/
+.flutter-plugins
+.flutter-plugins-dependencies
+.packages
+*.g.dart
+*.freezed.dart
+pubspec.lock
+*.log
+.DS_Store
