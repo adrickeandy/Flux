@@ -1,8 +1,7 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:flutter/foundation.dart';
 
-class AuthService extends ChangeNotifier {
+class AuthService {
   final _auth = FirebaseAuth.instance;
   final _db   = FirebaseFirestore.instance;
 
@@ -12,7 +11,7 @@ class AuthService extends ChangeNotifier {
   Future<void> login(String identifier, String password) async {
     String email = identifier;
     if (!identifier.contains('@')) {
-      String phone = identifier;
+      String phone = identifier.replaceAll(RegExp(r'\D'), '');
       if (phone.startsWith('07') && phone.length == 10) {
         phone = '+256${phone.substring(1)}';
       }
@@ -51,17 +50,17 @@ class AuthService extends ChangeNotifier {
       'displayName': name,
       'email': email,
       'phoneNumber': formattedPhone,
-      'about': 'Hey there! I am using FLUX.',
-      'photoURL': null,
+      'photoURL': '',
+      'about': 'Hey I use FLUX',
       'isOnline': true,
-      'createdAt': FieldValue.serverTimestamp(),
+      'lastSeen': DateTime.now().millisecondsSinceEpoch,
+      'createdAt': DateTime.now().millisecondsSinceEpoch,
     });
   }
 
   Future<void> signOut() async {
     _updateOnlineStatus(false);
     await _auth.signOut();
-    notifyListeners();
   }
 
   void _updateOnlineStatus(bool online) {
@@ -69,7 +68,7 @@ class AuthService extends ChangeNotifier {
     if (uid == null) return;
     _db.collection('users').doc(uid).update({
       'isOnline': online,
-      'lastSeen': FieldValue.serverTimestamp(),
+      'lastSeen': DateTime.now().millisecondsSinceEpoch,
     }).catchError((_) {});
   }
 }

@@ -28,8 +28,8 @@ class AvatarWidget extends StatelessWidget {
         children: [
           CircleAvatar(
             radius: size / 2,
-            backgroundColor: kPrimary.withOpacity(0.15),
-            backgroundImage: url != null && url!.isNotEmpty
+            backgroundColor: kPrimary.withAlpha(38),
+            backgroundImage: (url != null && url!.isNotEmpty)
                 ? CachedNetworkImageProvider(url!)
                 : null,
             child: (url == null || url!.isEmpty)
@@ -45,8 +45,7 @@ class AvatarWidget extends StatelessWidget {
           ),
           if (isOnline)
             Positioned(
-              right: -1,
-              bottom: -1,
+              right: -1, bottom: -1,
               child: Container(
                 width: size * 0.27,
                 height: size * 0.27,
@@ -59,7 +58,7 @@ class AvatarWidget extends StatelessWidget {
                   ),
                   boxShadow: [
                     BoxShadow(
-                      color: const Color(0xFF22C55E).withOpacity(0.5),
+                      color: const Color(0xFF22C55E).withAlpha(128),
                       blurRadius: 6,
                     ),
                   ],

@@ -18,7 +18,7 @@ class FullscreenImageViewer extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.black.withOpacity(0.95),
+      backgroundColor: Colors.black,
       body: Stack(
         children: [
           Center(
@@ -38,10 +38,10 @@ class FullscreenImageViewer extends StatelessWidget {
               child: Container(
                 width: 44, height: 44,
                 decoration: BoxDecoration(
-                  color: Colors.white.withOpacity(0.1),
+                  color: Colors.white.withAlpha(25),
                   shape: BoxShape.circle,
                 ),
-                child: const Icon(Icons.close, color: Colors.white),
+                child: const Icon(Icons.close_rounded, color: Colors.white),
               ),
             ),
           ),
@@ -50,11 +50,7 @@ class FullscreenImageViewer extends StatelessWidget {
             child: Text(
               name,
               textAlign: TextAlign.center,
-              style: const TextStyle(
-                color: Colors.white,
-                fontWeight: FontWeight.bold,
-                fontSize: 16,
-              ),
+              style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 16),
             ),
           ),
         ],

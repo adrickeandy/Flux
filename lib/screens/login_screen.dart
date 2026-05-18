@@ -10,14 +10,15 @@ class LoginScreen extends StatefulWidget {
 }
 
 class _LoginScreenState extends State<LoginScreen> {
-  final _idCtrl   = TextEditingController();
-  final _pwCtrl   = TextEditingController();
-  bool _showPass  = false;
-  bool _loading   = false;
+  final _idCtrl  = TextEditingController();
+  final _pwCtrl  = TextEditingController();
+  bool _showPass = false;
+  bool _loading  = false;
   String? _idErr;
   String? _pwErr;
 
-  bool get _isPhone => !_idCtrl.text.contains('@') && _idCtrl.text.isNotEmpty;
+  bool get _isPhone =>
+      !_idCtrl.text.contains('@') && _idCtrl.text.isNotEmpty;
 
   Future<void> _login() async {
     setState(() { _idErr = null; _pwErr = null; });
@@ -32,10 +33,12 @@ class _LoginScreenState extends State<LoginScreen> {
     } catch (e) {
       final msg = e.toString();
       if (msg.contains('account_not_found')) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Account not found. Sign up instead.'),
-              behavior: SnackBarBehavior.floating));
-        Future.delayed(const Duration(seconds: 1), () => context.go('/signup'));
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Account not found. Redirecting to sign up...'),
+                behavior: SnackBarBehavior.floating));
+          Future.delayed(const Duration(seconds: 1), () => context.go('/signup'));
+        }
       } else if (msg.contains('wrong-password') || msg.contains('invalid-credential')) {
         setState(() => _pwErr = 'Incorrect password');
       } else {
@@ -52,64 +55,69 @@ class _LoginScreenState extends State<LoginScreen> {
     return Scaffold(
       body: SafeArea(
         child: SingleChildScrollView(
-          padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 24),
+          padding: const EdgeInsets.fromLTRB(32, 64, 32, 48),
           child: Column(
             children: [
-              const SizedBox(height: 32),
+              // Logo
               Container(
                 width: 80, height: 80,
                 decoration: BoxDecoration(
                   gradient: kGradient,
                   borderRadius: BorderRadius.circular(24),
-                  boxShadow: [BoxShadow(color: kPrimary.withOpacity(0.4), blurRadius: 24)],
+                  boxShadow: [BoxShadow(color: kPrimary.withAlpha(102), blurRadius: 24)],
                 ),
-                child: const Icon(Icons.send_rounded, color: Colors.white, size: 38),
+                child: const Icon(Icons.send_rounded, color: Colors.white, size: 40),
               ),
               const SizedBox(height: 16),
               ShaderMask(
                 shaderCallback: (b) => kGradient.createShader(b),
                 child: const Text('FLUX',
-                  style: TextStyle(fontSize: 36, fontWeight: FontWeight.w900,
-                      color: Colors.white, fontStyle: FontStyle.italic, letterSpacing: -1)),
+                    style: TextStyle(fontSize: 32, fontWeight: FontWeight.w900,
+                        color: Colors.white, fontStyle: FontStyle.italic, letterSpacing: -1)),
               ),
               const SizedBox(height: 4),
-              Text('WELCOME BACK',
-                style: TextStyle(fontSize: 9, fontWeight: FontWeight.w900,
-                    letterSpacing: 4, color: Colors.grey.shade500)),
-              const SizedBox(height: 44),
+              Text('Welcome back',
+                  style: TextStyle(fontSize: 10, fontWeight: FontWeight.w900,
+                      color: Colors.grey.shade500, letterSpacing: 2)),
+              const SizedBox(height: 48),
 
-              _label('PHONE OR EMAIL'),
+              // Phone/Email field
+              Align(alignment: Alignment.centerLeft,
+                child: Text('PHONE OR EMAIL',
+                    style: TextStyle(fontSize: 9, fontWeight: FontWeight.w900,
+                        color: kPrimary, letterSpacing: 2))),
               const SizedBox(height: 6),
-              Stack(
-                alignment: Alignment.centerLeft,
-                children: [
-                  TextField(
-                    controller: _idCtrl,
-                    autofocus: true,
-                    keyboardType: TextInputType.emailAddress,
-                    onChanged: (_) => setState(() {}),
-                    style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w700),
-                    decoration: InputDecoration(
-                      hintText: '07XXXXXXXX or email',
-                      contentPadding: EdgeInsets.fromLTRB(_isPhone ? 90 : 16, 14, 16, 14),
-                      errorText: _idErr,
-                    ),
+              Stack(alignment: Alignment.centerLeft, children: [
+                TextField(
+                  controller: _idCtrl,
+                  autofocus: true,
+                  keyboardType: TextInputType.emailAddress,
+                  onChanged: (_) => setState(() {}),
+                  style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w700),
+                  decoration: InputDecoration(
+                    hintText: '07XXXXXXXX or email',
+                    contentPadding: EdgeInsets.fromLTRB(_isPhone ? 88 : 16, 14, 16, 14),
+                    errorText: _idErr,
                   ),
-                  if (_isPhone)
-                    Padding(
-                      padding: const EdgeInsets.only(left: 14),
-                      child: Row(mainAxisSize: MainAxisSize.min, children: [
-                        const Text('🇺🇬', style: TextStyle(fontSize: 18)),
-                        const SizedBox(width: 6),
-                        Text('+256', style: TextStyle(fontWeight: FontWeight.w700,
-                            color: Colors.grey.shade600, fontSize: 13)),
-                      ]),
-                    ),
-                ],
-              ),
+                ),
+                if (_isPhone)
+                  Padding(
+                    padding: const EdgeInsets.only(left: 14),
+                    child: Row(mainAxisSize: MainAxisSize.min, children: [
+                      const Text('🇺🇬', style: TextStyle(fontSize: 18)),
+                      const SizedBox(width: 6),
+                      Text('+256', style: TextStyle(fontWeight: FontWeight.w700,
+                          color: Colors.grey.shade600, fontSize: 13)),
+                    ]),
+                  ),
+              ]),
               const SizedBox(height: 20),
 
-              _label('PASSWORD'),
+              // Password
+              Align(alignment: Alignment.centerLeft,
+                child: Text('PASSWORD',
+                    style: TextStyle(fontSize: 9, fontWeight: FontWeight.w900,
+                        color: kPrimary, letterSpacing: 2))),
               const SizedBox(height: 6),
               TextField(
                 controller: _pwCtrl,
@@ -127,49 +135,50 @@ class _LoginScreenState extends State<LoginScreen> {
               ),
               const SizedBox(height: 32),
 
-              SizedBox(
-                width: double.infinity, height: 54,
-                child: DecoratedBox(
+              // Login button
+              GestureDetector(
+                onTap: _loading ? null : _login,
+                child: Container(
+                  width: double.infinity, height: 56,
                   decoration: BoxDecoration(
-                    gradient: kGradient,
+                    color: kPrimary,
                     borderRadius: BorderRadius.circular(20),
-                    boxShadow: [BoxShadow(color: kPrimary.withOpacity(0.4),
+                    boxShadow: [BoxShadow(color: kPrimary.withAlpha(102),
                         blurRadius: 20, offset: const Offset(0, 8))],
                   ),
-                  child: ElevatedButton(
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.transparent, shadowColor: Colors.transparent,
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-                    ),
-                    onPressed: _loading ? null : _login,
-                    child: _loading
-                        ? const SizedBox(width: 22, height: 22,
-                            child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
-                        : const Text('LOG IN',
-                            style: TextStyle(fontWeight: FontWeight.w900,
-                                letterSpacing: 3, fontSize: 12, color: Colors.white)),
-                  ),
+                  alignment: Alignment.center,
+                  child: _loading
+                      ? const SizedBox(width: 22, height: 22,
+                          child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
+                      : const Text('Log In',
+                          style: TextStyle(fontWeight: FontWeight.w900,
+                              fontSize: 13, color: Colors.white)),
                 ),
               ),
               const SizedBox(height: 24),
+
+              // Divider
               Row(children: [
                 Expanded(child: Divider(color: Colors.grey.shade200)),
                 Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 16),
-                  child: Text('OR', style: TextStyle(fontSize: 9,
+                  child: Text('Or', style: TextStyle(fontSize: 9,
                       fontWeight: FontWeight.w900, color: Colors.grey.shade400, letterSpacing: 2)),
                 ),
                 Expanded(child: Divider(color: Colors.grey.shade200)),
               ]),
               const SizedBox(height: 24),
-              TextButton(
-                onPressed: () => context.go('/signup'),
+
+              // Sign up link
+              GestureDetector(
+                onTap: () => context.go('/signup'),
                 child: RichText(text: TextSpan(
                   text: "Don't have an account? ",
                   style: TextStyle(color: Colors.grey.shade500, fontSize: 12),
                   children: [
                     TextSpan(text: 'SIGN UP',
-                      style: TextStyle(color: kPrimary, fontWeight: FontWeight.w900, letterSpacing: 2)),
+                        style: TextStyle(color: kPrimary, fontWeight: FontWeight.w900,
+                            letterSpacing: 2)),
                   ],
                 )),
               ),
@@ -179,10 +188,4 @@ class _LoginScreenState extends State<LoginScreen> {
       ),
     );
   }
-
-  Widget _label(String t) => Align(
-    alignment: Alignment.centerLeft,
-    child: Text(t, style: TextStyle(fontSize: 9, fontWeight: FontWeight.w900,
-        color: kPrimary, letterSpacing: 2)),
-  );
 }

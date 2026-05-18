@@ -7,6 +7,8 @@ import '../services/chat_service.dart';
 import '../widgets/chat_bubble.dart';
 import '../widgets/message_input.dart';
 import '../widgets/chat_window_header.dart';
+import '../theme/app_theme.dart';
+import '../widgets/fullscreen_image.dart';
 
 class ChatScreen extends StatefulWidget {
   final String userId;
@@ -19,9 +21,9 @@ class _ChatScreenState extends State<ChatScreen> {
   final _chatService = ChatService();
   final _scrollCtrl  = ScrollController();
   final _uid = FirebaseAuth.instance.currentUser!.uid;
-  MessageModel? _replyingTo;
   bool _showSearch = false;
   String _searchQuery = '';
+  bool _otherTyping = false;
   late final String _chatDocId;
 
   @override
@@ -29,13 +31,33 @@ class _ChatScreenState extends State<ChatScreen> {
     super.initState();
     _chatDocId = _chatService.chatId(widget.userId);
     _chatService.markAsRead(_chatDocId);
+    _listenTyping();
+  }
+
+  void _listenTyping() {
+    FirebaseFirestore.instance
+        .collection('chats').doc(_chatDocId)
+        .snapshots()
+        .listen((snap) {
+      if (!mounted) return;
+      final data = snap.data();
+      if (data?['typingStatus'] != null) {
+        final ts = data!['typingStatus'][widget.userId];
+        if (ts != null) {
+          final isTyping = DateTime.now().millisecondsSinceEpoch - ts < 5000;
+          setState(() => _otherTyping = isTyping);
+        } else {
+          setState(() => _otherTyping = false);
+        }
+      }
+    });
   }
 
   void _scrollToBottom() {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (_scrollCtrl.hasClients) {
         _scrollCtrl.animateTo(_scrollCtrl.position.maxScrollExtent,
-          duration: const Duration(milliseconds: 300), curve: Curves.easeOut);
+            duration: const Duration(milliseconds: 300), curve: Curves.easeOut);
       }
     });
   }
@@ -51,7 +73,9 @@ class _ChatScreenState extends State<ChatScreen> {
               userSnap.data!.data() as Map<String, dynamic>, widget.userId);
         }
 
-        final subtitle = other?.isOnline == true ? 'ONLINE' : (other?.about ?? '');
+        final subtitle = _otherTyping
+            ? 'Typing...'
+            : (other?.isOnline == true ? 'Online' : 'Offline');
 
         return Scaffold(
           appBar: PreferredSize(
@@ -61,6 +85,9 @@ class _ChatScreenState extends State<ChatScreen> {
               avatar: other?.photoURL,
               subtitle: subtitle,
               id: widget.userId,
+              isGroup: false,
+              onToggleSearch: () => setState(() => _showSearch = !_showSearch),
+              onClearChat: () => _chatService.clearChat(_chatDocId),
             ),
           ),
           body: Column(
@@ -68,19 +95,33 @@ class _ChatScreenState extends State<ChatScreen> {
               if (_showSearch)
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                  child: TextField(
-                    autofocus: true,
-                    onChanged: (v) => setState(() => _searchQuery = v),
-                    decoration: InputDecoration(
-                      hintText: 'Search messages...',
-                      prefixIcon: const Icon(Icons.search_rounded, size: 18),
-                      suffixIcon: IconButton(
-                        icon: const Icon(Icons.close, size: 18),
+                  color: Theme.of(context).cardColor.withAlpha(153),
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: TextField(
+                          autofocus: true,
+                          onChanged: (v) => setState(() => _searchQuery = v),
+                          style: const TextStyle(fontSize: 11),
+                          decoration: InputDecoration(
+                            hintText: 'Search messages...',
+                            prefixIcon: const Icon(Icons.search_rounded, size: 18),
+                            border: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(12),
+                                borderSide: BorderSide.none),
+                            filled: true,
+                            contentPadding: const EdgeInsets.symmetric(vertical: 8),
+                          ),
+                        ),
+                      ),
+                      TextButton(
                         onPressed: () => setState(() {
                           _showSearch = false; _searchQuery = '';
                         }),
+                        child: const Text('Cancel',
+                            style: TextStyle(fontSize: 10, fontWeight: FontWeight.w900, color: kPrimary)),
                       ),
-                    ),
+                    ],
                   ),
                 ),
 
@@ -93,25 +134,39 @@ class _ChatScreenState extends State<ChatScreen> {
                         ? msgs
                         : msgs.where((m) => m.content.toLowerCase()
                             .contains(_searchQuery.toLowerCase())).toList();
-                    WidgetsBinding.instance.addPostFrameCallback((_) => _scrollToBottom());
 
-                    if (filtered.isEmpty) {
-                      return Center(
-                        child: Column(mainAxisSize: MainAxisSize.min, children: [
-                          Icon(Icons.chat_bubble_outline_rounded, size: 48,
-                              color: Colors.grey.shade300),
-                          const SizedBox(height: 12),
-                          Text('Say hello 👋',
-                              style: TextStyle(color: Colors.grey.shade400, fontSize: 13)),
-                        ]),
-                      );
-                    }
+                    WidgetsBinding.instance.addPostFrameCallback((_) => _scrollToBottom());
 
                     return ListView.builder(
                       controller: _scrollCtrl,
                       padding: const EdgeInsets.symmetric(vertical: 12),
-                      itemCount: filtered.length,
+                      itemCount: filtered.length + (_otherTyping ? 1 : 0),
                       itemBuilder: (_, i) {
+                        if (_otherTyping && i == filtered.length) {
+                          return Padding(
+                            padding: const EdgeInsets.only(left: 16, bottom: 12),
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                              decoration: BoxDecoration(
+                                color: kPrimary.withAlpha(13),
+                                borderRadius: BorderRadius.circular(20),
+                                border: Border.all(color: kPrimary.withAlpha(51)),
+                              ),
+                              child: Row(mainAxisSize: MainAxisSize.min, children: [
+                                Container(width: 4, height: 4,
+                                    decoration: const BoxDecoration(
+                                        color: kPrimary, shape: BoxShape.circle)),
+                                const SizedBox(width: 6),
+                                Text(
+                                  '${other?.displayName?.split(' ').first ?? 'Someone'} is typing...',
+                                  style: const TextStyle(fontSize: 9, color: kPrimary,
+                                      fontWeight: FontWeight.w900, letterSpacing: 1),
+                                ),
+                              ]),
+                            ),
+                          );
+                        }
+
                         final msg = filtered[i];
                         final isMe = msg.senderId == _uid;
                         final showTail = i == filtered.length - 1 ||
@@ -119,10 +174,12 @@ class _ChatScreenState extends State<ChatScreen> {
 
                         return ChatBubble(
                           message: msg, isMe: isMe, showTail: showTail,
-                          onReply: () => setState(() => _replyingTo = msg),
-                          onStar: () => _chatService.toggleStar(
-                              _chatDocId, msg.id, msg.isStarred),
+                          onReply: () {},
+                          onStar: () => _chatService.toggleStar(_chatDocId, msg.id, msg.isStarred),
                           onReact: (e) => _chatService.addReaction(_chatDocId, msg.id, e),
+                          onDoubleTap: (id) => _chatService.addReaction(_chatDocId, id, '❤️'),
+                          onTapImage: (url, name) => FullscreenImageViewer.show(context, url, name),
+                          onVote: (id, idx) => _chatService.vote(_chatDocId, id, idx),
                         );
                       },
                     );
@@ -131,18 +188,15 @@ class _ChatScreenState extends State<ChatScreen> {
               ),
 
               MessageInput(
-                replyingTo: _replyingTo,
-                onCancelReply: () => setState(() => _replyingTo = null),
                 onTyping: () => _chatService.setTyping(_chatDocId),
-                onSend: (content, type, {file, audioDuration, replyTo}) async {
+                onSend: (content, type, {file, meta, replyTo}) async {
                   String? mediaUrl;
                   if (file != null) mediaUrl = await _chatService.uploadFile(file);
                   _chatService.sendMessage(
                     chatDocId: _chatDocId, content: content, type: type,
-                    mediaUrl: mediaUrl, audioDuration: audioDuration,
-                    replyTo: replyTo, otherUserId: widget.userId, isGroup: false,
+                    mediaUrl: mediaUrl, meta: meta, replyTo: replyTo,
+                    otherUserId: widget.userId, isGroup: false,
                   );
-                  setState(() => _replyingTo = null);
                   _scrollToBottom();
                 },
               ),

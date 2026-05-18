@@ -6,7 +6,7 @@ class UserModel {
   final String? phoneNumber;
   final String? about;
   final bool isOnline;
-  final DateTime? lastSeen;
+  final int? lastSeen;
 
   UserModel({
     required this.uid,
@@ -20,19 +20,15 @@ class UserModel {
   });
 
   factory UserModel.fromMap(Map<String, dynamic> map, String uid) {
-    DateTime? lastSeen;
-    if (map['lastSeen'] != null) {
-      try { lastSeen = (map['lastSeen'] as dynamic).toDate(); } catch (_) {}
-    }
     return UserModel(
       uid: uid,
-      displayName: map['displayName'] ?? map['name'] ?? 'User',
+      displayName: map['displayName'] ?? 'User',
       photoURL: map['photoURL'],
       email: map['email'],
       phoneNumber: map['phoneNumber'],
-      about: map['about'] ?? 'Hey there! I am using FLUX.',
+      about: map['about'] ?? 'Hey I use FLUX',
       isOnline: map['isOnline'] ?? false,
-      lastSeen: lastSeen,
+      lastSeen: map['lastSeen'],
     );
   }
 }

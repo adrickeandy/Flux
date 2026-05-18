@@ -1,13 +1,14 @@
 import 'dart:math';
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import '../theme/app_theme.dart';
+import '../main.dart';
 
 class AppHeader extends StatefulWidget {
   final String title;
   final bool showSearch;
   final String searchPlaceholder;
   final ValueChanged<String>? onSearch;
-  final List<Widget>? actions;
 
   const AppHeader({
     super.key,
@@ -15,7 +16,6 @@ class AppHeader extends StatefulWidget {
     this.showSearch = true,
     this.searchPlaceholder = 'Search...',
     this.onSearch,
-    this.actions,
   });
 
   @override
@@ -31,9 +31,7 @@ class _AppHeaderState extends State<AppHeader> with TickerProviderStateMixin {
   void initState() {
     super.initState();
     _glowCtrl = AnimationController(
-      vsync: this,
-      duration: const Duration(seconds: 2),
-    )..repeat();
+        vsync: this, duration: const Duration(seconds: 2))..repeat();
     _glowAnim = Tween<double>(begin: 0, end: 2 * pi).animate(_glowCtrl);
   }
 
@@ -48,32 +46,54 @@ class _AppHeaderState extends State<AppHeader> with TickerProviderStateMixin {
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final cardColor = isDark ? kCardDark : kCardLight;
-    final isFlux = widget.title == 'FLUX';
+    final isHome = widget.title == 'FLUX';
+    final provider = ThemeProvider.of(context);
+    final isDarkMode = provider?.themeMode == ThemeMode.dark ||
+        (provider?.themeMode == ThemeMode.system &&
+            MediaQuery.of(context).platformBrightness == Brightness.dark);
 
     return Container(
       decoration: BoxDecoration(
-        color: cardColor,
-        borderRadius: const BorderRadius.vertical(bottom: Radius.circular(28)),
+        color: cardColor.withAlpha(242),
+        borderRadius: const BorderRadius.vertical(bottom: Radius.circular(36)),
         boxShadow: [
-          BoxShadow(color: Colors.black.withOpacity(0.08), blurRadius: 20),
+          BoxShadow(color: Colors.black.withAlpha(20), blurRadius: 20),
         ],
       ),
       child: SafeArea(
         bottom: false,
         child: Padding(
-          padding: const EdgeInsets.fromLTRB(20, 10, 16, 14),
+          padding: const EdgeInsets.fromLTRB(24, 8, 16, 14),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Row(
                 children: [
-                  if (isFlux)
+                  // Back button if not home
+                  if (!isHome)
+                    GestureDetector(
+                      onTap: () => Navigator.of(context).pop(),
+                      child: Container(
+                        width: 32, height: 32,
+                        decoration: BoxDecoration(
+                          color: Colors.grey.withAlpha(13),
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(color: Colors.grey.withAlpha(25)),
+                        ),
+                        child: Icon(Icons.chevron_left_rounded,
+                            size: 20, color: Colors.grey.shade500),
+                      ),
+                    ),
+                  if (!isHome) const SizedBox(width: 12),
+
+                  // Title
+                  if (isHome)
                     ShaderMask(
                       shaderCallback: (b) => kGradient.createShader(b),
-                      child: Text(
+                      child: const Text(
                         'FLUX',
-                        style: const TextStyle(
-                          fontSize: 38,
+                        style: TextStyle(
+                          fontSize: 40,
                           fontWeight: FontWeight.w900,
                           color: Colors.white,
                           fontStyle: FontStyle.italic,
@@ -86,21 +106,59 @@ class _AppHeaderState extends State<AppHeader> with TickerProviderStateMixin {
                     Text(
                       widget.title,
                       style: TextStyle(
-                        fontSize: 22,
-                        fontWeight: FontWeight.w900,
+                        fontSize: 18,
+                        fontWeight: FontWeight.w700,
                         color: isDark ? Colors.white : const Color(0xFF111827),
-                        letterSpacing: -0.5,
                       ),
                     ),
+
                   const Spacer(),
-                  ...?widget.actions,
+
+                  // Dark mode toggle (home only)
+                  if (isHome)
+                    GestureDetector(
+                      onTap: () {
+                        provider?.setTheme(
+                            isDarkMode ? ThemeMode.light : ThemeMode.dark);
+                      },
+                      child: Container(
+                        padding: const EdgeInsets.all(8),
+                        decoration: BoxDecoration(
+                          color: Colors.grey.withAlpha(13),
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(color: Colors.grey.withAlpha(25)),
+                        ),
+                        child: Icon(
+                          isDarkMode ? Icons.light_mode_rounded : Icons.dark_mode_rounded,
+                          size: 16, color: kPrimary,
+                        ),
+                      ),
+                    ),
+                  if (isHome) const SizedBox(width: 8),
+
+                  // Settings icon
+                  GestureDetector(
+                    onTap: () => context.push('/settings'),
+                    child: Container(
+                      padding: const EdgeInsets.all(8),
+                      decoration: BoxDecoration(
+                        color: Colors.grey.withAlpha(13),
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(color: Colors.grey.withAlpha(25)),
+                      ),
+                      child: Icon(Icons.settings_rounded,
+                          size: 16,
+                          color: isDark ? Colors.white : const Color(0xFF111827)),
+                    ),
+                  ),
                 ],
               ),
+
               if (widget.showSearch) ...[
                 const SizedBox(height: 10),
                 AnimatedBuilder(
                   animation: _glowAnim,
-                  builder: (context, child) => CustomPaint(
+                  builder: (_, child) => CustomPaint(
                     painter: _GlowBorderPainter(angle: _glowAnim.value, isDark: isDark),
                     child: child,
                   ),
@@ -109,7 +167,7 @@ class _AppHeaderState extends State<AppHeader> with TickerProviderStateMixin {
                     margin: const EdgeInsets.all(2),
                     decoration: BoxDecoration(
                       color: isDark ? const Color(0xFF0F1729) : Colors.white,
-                      borderRadius: BorderRadius.circular(16),
+                      borderRadius: BorderRadius.circular(20),
                     ),
                     child: Row(
                       children: [
@@ -120,13 +178,12 @@ class _AppHeaderState extends State<AppHeader> with TickerProviderStateMixin {
                           child: TextField(
                             controller: _ctrl,
                             onChanged: widget.onSearch,
-                            style: const TextStyle(fontSize: 13),
+                            style: const TextStyle(fontSize: 11),
                             decoration: InputDecoration(
                               hintText: widget.searchPlaceholder,
                               hintStyle: TextStyle(
-                                color: Colors.grey.shade400,
-                                fontSize: 12,
-                              ),
+                                  color: Colors.grey.shade400,
+                                  fontSize: 11),
                               border: InputBorder.none,
                               fillColor: Colors.transparent,
                               filled: true,
@@ -141,9 +198,9 @@ class _AppHeaderState extends State<AppHeader> with TickerProviderStateMixin {
                             width: 32, height: 32,
                             decoration: BoxDecoration(
                               gradient: kGradient,
-                              borderRadius: BorderRadius.circular(12),
+                              borderRadius: BorderRadius.circular(20),
                               boxShadow: [
-                                BoxShadow(color: kPrimary.withOpacity(0.3), blurRadius: 8),
+                                BoxShadow(color: kPrimary.withAlpha(77), blurRadius: 8),
                               ],
                             ),
                             child: const Icon(Icons.arrow_forward_rounded,
@@ -171,21 +228,18 @@ class _GlowBorderPainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
     final rect = Rect.fromLTWH(0, 0, size.width, size.height);
-    final rrect = RRect.fromRectAndRadius(rect, const Radius.circular(18));
-    final gradient = SweepGradient(
-      startAngle: angle,
-      endAngle: angle + 2 * pi,
-      colors: const [
-        Color(0xFF833AB4),
-        Color(0xFFfd1d1d),
-        Color(0xFFfcb045),
-        Color(0xFF833AB4),
-      ],
-    );
+    final rrect = RRect.fromRectAndRadius(rect, const Radius.circular(22));
     canvas.drawRRect(
       rrect,
       Paint()
-        ..shader = gradient.createShader(rect)
+        ..shader = SweepGradient(
+          startAngle: angle,
+          endAngle: angle + 2 * pi,
+          colors: const [
+            Color(0xFF833AB4), Color(0xFFfd1d1d),
+            Color(0xFFfcb045), Color(0xFF833AB4),
+          ],
+        ).createShader(rect)
         ..style = PaintingStyle.stroke
         ..strokeWidth = 2
         ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 3),

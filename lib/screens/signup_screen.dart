@@ -15,9 +15,7 @@ class _SignupScreenState extends State<SignupScreen> {
   final _emailCtrl   = TextEditingController();
   final _passCtrl    = TextEditingController();
   final _confirmCtrl = TextEditingController();
-  bool _showPass = false;
-  bool _showConfirm = false;
-  bool _loading = false;
+  bool _showPass = false, _showConfirm = false, _loading = false;
   Map<String, String> _errors = {};
 
   bool _validate() {
@@ -62,67 +60,116 @@ class _SignupScreenState extends State<SignupScreen> {
     return Scaffold(
       body: SafeArea(
         child: SingleChildScrollView(
-          padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 24),
+          padding: const EdgeInsets.fromLTRB(32, 48, 32, 48),
           child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Row(children: [
-                IconButton(
-                  icon: const Icon(Icons.arrow_back_ios_rounded),
-                  onPressed: () => context.go('/login'),
-                ),
-                const SizedBox(width: 8),
-                ShaderMask(
-                  shaderCallback: (b) => kGradient.createShader(b),
-                  child: const Text('CREATE ACCOUNT',
-                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.w900,
-                        color: Colors.white, letterSpacing: 1)),
-                ),
-              ]),
-              const SizedBox(height: 28),
-              _field('FULL NAME', _nameCtrl, 'Your name', _errors['name']),
-              const SizedBox(height: 16),
-              _phoneField(),
-              const SizedBox(height: 16),
-              _field('EMAIL', _emailCtrl, 'email@example.com', _errors['email'],
-                  type: TextInputType.emailAddress),
-              const SizedBox(height: 16),
-              _passField('PASSWORD', _passCtrl, _showPass,
-                  () => setState(() => _showPass = !_showPass), _errors['password']),
-              const SizedBox(height: 16),
-              _passField('CONFIRM PASSWORD', _confirmCtrl, _showConfirm,
-                  () => setState(() => _showConfirm = !_showConfirm), _errors['confirm']),
+              Center(child: Column(children: [
+                const Text('Create Account',
+                    style: TextStyle(fontSize: 22, fontWeight: FontWeight.w800)),
+                const SizedBox(height: 4),
+                Text('Join the FLUX community',
+                    style: TextStyle(fontSize: 10, color: Colors.grey.shade500,
+                        fontWeight: FontWeight.w900, letterSpacing: 2)),
+              ])),
               const SizedBox(height: 32),
+
+              _label('FULL NAME'),
+              const SizedBox(height: 6),
+              TextField(controller: _nameCtrl, autofocus: true,
+                style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w700),
+                decoration: InputDecoration(hintText: 'John Doe', errorText: _errors['name'])),
+              const SizedBox(height: 16),
+
+              _label('PHONE NUMBER'),
+              const SizedBox(height: 6),
+              Stack(alignment: Alignment.centerLeft, children: [
+                TextField(
+                  controller: _phoneCtrl, keyboardType: TextInputType.phone,
+                  style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w700),
+                  decoration: InputDecoration(
+                    hintText: '07XXXXXXXX',
+                    contentPadding: const EdgeInsets.fromLTRB(88, 14, 16, 14),
+                    errorText: _errors['phone'],
+                  ),
+                ),
+                Padding(padding: const EdgeInsets.only(left: 14),
+                  child: Row(mainAxisSize: MainAxisSize.min, children: [
+                    const Text('🇺🇬', style: TextStyle(fontSize: 18)),
+                    const SizedBox(width: 6),
+                    Text('+256', style: TextStyle(fontWeight: FontWeight.w700,
+                        color: Colors.grey.shade600, fontSize: 13)),
+                  ])),
+              ]),
+              const SizedBox(height: 16),
+
+              _label('EMAIL ADDRESS'),
+              const SizedBox(height: 6),
+              TextField(controller: _emailCtrl, keyboardType: TextInputType.emailAddress,
+                style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w700),
+                decoration: InputDecoration(hintText: 'email@example.com', errorText: _errors['email'])),
+              const SizedBox(height: 16),
+
+              _label('PASSWORD'),
+              const SizedBox(height: 6),
+              TextField(controller: _passCtrl, obscureText: !_showPass,
+                style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w700),
+                decoration: InputDecoration(
+                  hintText: 'Min 8 characters', errorText: _errors['password'],
+                  suffixIcon: IconButton(
+                    icon: Icon(_showPass ? Icons.visibility_off : Icons.visibility,
+                        size: 20, color: Colors.grey),
+                    onPressed: () => setState(() => _showPass = !_showPass),
+                  ),
+                )),
+              const SizedBox(height: 16),
+
+              _label('CONFIRM PASSWORD'),
+              const SizedBox(height: 6),
+              TextField(controller: _confirmCtrl, obscureText: !_showConfirm,
+                style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w700),
+                decoration: InputDecoration(
+                  hintText: 'Confirm your password', errorText: _errors['confirm'],
+                  suffixIcon: IconButton(
+                    icon: Icon(_showConfirm ? Icons.visibility_off : Icons.visibility,
+                        size: 20, color: Colors.grey),
+                    onPressed: () => setState(() => _showConfirm = !_showConfirm),
+                  ),
+                )),
+              const SizedBox(height: 32),
+
               GestureDetector(
                 onTap: _loading ? null : _signUp,
                 child: Container(
-                  width: double.infinity, height: 54,
+                  width: double.infinity, height: 56,
                   decoration: BoxDecoration(
-                    gradient: kGradient,
+                    color: kPrimary,
                     borderRadius: BorderRadius.circular(20),
-                    boxShadow: [BoxShadow(color: kPrimary.withOpacity(0.4),
+                    boxShadow: [BoxShadow(color: kPrimary.withAlpha(102),
                         blurRadius: 20, offset: const Offset(0, 8))],
                   ),
                   alignment: Alignment.center,
                   child: _loading
                       ? const SizedBox(width: 22, height: 22,
                           child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
-                      : const Text('CREATE ACCOUNT',
+                      : const Text('Create Account',
                           style: TextStyle(fontWeight: FontWeight.w900,
-                              letterSpacing: 2, fontSize: 11, color: Colors.white)),
+                              fontSize: 13, color: Colors.white)),
                 ),
               ),
-              const SizedBox(height: 20),
-              TextButton(
-                onPressed: () => context.go('/login'),
+              const SizedBox(height: 24),
+
+              Center(child: GestureDetector(
+                onTap: () => context.go('/login'),
                 child: RichText(text: TextSpan(
                   text: 'Already have an account? ',
                   style: TextStyle(color: Colors.grey.shade500, fontSize: 12),
                   children: [
                     TextSpan(text: 'LOG IN',
-                      style: TextStyle(color: kPrimary, fontWeight: FontWeight.w900, letterSpacing: 2)),
+                        style: TextStyle(color: kPrimary, fontWeight: FontWeight.w900, letterSpacing: 2)),
                   ],
                 )),
-              ),
+              )),
             ],
           ),
         ),
@@ -130,54 +177,7 @@ class _SignupScreenState extends State<SignupScreen> {
     );
   }
 
-  Widget _field(String label, TextEditingController ctrl, String hint,
-      String? error, {TextInputType type = TextInputType.text}) =>
-    Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-      Text(label, style: TextStyle(fontSize: 9, fontWeight: FontWeight.w900,
-          color: kPrimary, letterSpacing: 2)),
-      const SizedBox(height: 6),
-      TextField(controller: ctrl, keyboardType: type,
-        style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w700),
-        decoration: InputDecoration(hintText: hint, errorText: error)),
-    ]);
-
-  Widget _phoneField() => Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-    Text('PHONE NUMBER', style: TextStyle(fontSize: 9, fontWeight: FontWeight.w900,
-        color: kPrimary, letterSpacing: 2)),
-    const SizedBox(height: 6),
-    Stack(alignment: Alignment.centerLeft, children: [
-      TextField(controller: _phoneCtrl, keyboardType: TextInputType.phone,
-        style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w700),
-        decoration: InputDecoration(
-          hintText: '07XXXXXXXX',
-          contentPadding: const EdgeInsets.fromLTRB(88, 14, 16, 14),
-          errorText: _errors['phone'],
-        )),
-      Padding(padding: const EdgeInsets.only(left: 14),
-        child: Row(mainAxisSize: MainAxisSize.min, children: [
-          const Text('🇺🇬', style: TextStyle(fontSize: 18)),
-          const SizedBox(width: 6),
-          Text('+256', style: TextStyle(fontWeight: FontWeight.w700,
-              color: Colors.grey.shade600, fontSize: 13)),
-        ])),
-    ]),
-  ]);
-
-  Widget _passField(String label, TextEditingController ctrl,
-      bool show, VoidCallback toggle, String? error) =>
-    Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-      Text(label, style: TextStyle(fontSize: 9, fontWeight: FontWeight.w900,
-          color: kPrimary, letterSpacing: 2)),
-      const SizedBox(height: 6),
-      TextField(controller: ctrl, obscureText: !show,
-        style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w700),
-        decoration: InputDecoration(
-          hintText: 'Enter password', errorText: error,
-          suffixIcon: IconButton(
-            icon: Icon(show ? Icons.visibility_off : Icons.visibility,
-                size: 20, color: Colors.grey),
-            onPressed: toggle,
-          ),
-        )),
-    ]);
+  Widget _label(String t) => Text(t,
+      style: TextStyle(fontSize: 9, fontWeight: FontWeight.w900,
+          color: kPrimary, letterSpacing: 2));
 }

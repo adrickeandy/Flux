@@ -1,12 +1,10 @@
 class ChatModel {
   final String id;
-  final String name;
-  final String avatar;
   final String lastMessage;
   final String? lastMessageSenderId;
   final String? lastMessageSenderName;
   final String? lastMessageStatus;
-  final DateTime? lastMessageTimestamp;
+  final dynamic lastMessageTimestamp;
   final dynamic unreadCount;
   final bool isGroup;
   final List<String> participants;
@@ -16,8 +14,6 @@ class ChatModel {
 
   ChatModel({
     required this.id,
-    required this.name,
-    required this.avatar,
     required this.lastMessage,
     this.lastMessageSenderId,
     this.lastMessageSenderName,
@@ -32,19 +28,13 @@ class ChatModel {
   });
 
   factory ChatModel.fromMap(Map<String, dynamic> map, String id) {
-    DateTime? ts;
-    if (map['lastMessageTimestamp'] != null) {
-      try { ts = (map['lastMessageTimestamp'] as dynamic).toDate(); } catch (_) {}
-    }
     return ChatModel(
       id: id,
-      name: map['groupName'] ?? map['name'] ?? '',
-      avatar: map['groupAvatar'] ?? map['avatar'] ?? '',
       lastMessage: map['lastMessage'] ?? '',
       lastMessageSenderId: map['lastMessageSenderId'],
       lastMessageSenderName: map['lastMessageSenderName'],
       lastMessageStatus: map['lastMessageStatus'],
-      lastMessageTimestamp: ts,
+      lastMessageTimestamp: map['lastMessageTimestamp'],
       unreadCount: map['unreadCount'] ?? 0,
       isGroup: map['isGroup'] ?? false,
       participants: List<String>.from(map['participants'] ?? []),
@@ -52,5 +42,25 @@ class ChatModel {
       groupAvatar: map['groupAvatar'],
       archivedBy: List<String>.from(map['archivedBy'] ?? []),
     );
+  }
+
+  String formattedTime() {
+    if (lastMessageTimestamp == null) return '';
+    try {
+      final dt = (lastMessageTimestamp as dynamic).toDate() as DateTime;
+      final now = DateTime.now();
+      final diff = now.difference(dt);
+      if (diff.inDays == 0) {
+        return '${dt.hour.toString().padLeft(2, '0')}:${dt.minute.toString().padLeft(2, '0')}';
+      }
+      if (diff.inDays == 1) return 'Yesterday';
+      if (diff.inDays < 7) {
+        const days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+        return days[dt.weekday - 1];
+      }
+      return '${dt.month}/${dt.day}/${dt.year.toString().substring(2)}';
+    } catch (_) {
+      return '';
+    }
   }
 }

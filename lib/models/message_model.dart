@@ -4,16 +4,17 @@ class MessageModel {
   final String? senderName;
   final String? senderAvatar;
   final String content;
-  final DateTime timestamp;
+  final String timestamp;
   final String status;
   final String type;
   final String? mediaUrl;
   final String? fileName;
   final String? fileSize;
-  final double? audioDuration;
+  final String? mimeType;
   final List<String> reactions;
   final bool isStarred;
   final ReplyInfo? replyTo;
+  final Map<String, dynamic>? meta;
 
   MessageModel({
     required this.id,
@@ -27,73 +28,40 @@ class MessageModel {
     this.mediaUrl,
     this.fileName,
     this.fileSize,
-    this.audioDuration,
+    this.mimeType,
     this.reactions = const [],
     this.isStarred = false,
     this.replyTo,
+    this.meta,
   });
 
   factory MessageModel.fromMap(Map<String, dynamic> map, String id) {
+    String timestamp = 'Sending...';
+    if (map['timestamp'] != null) {
+      try {
+        final dt = (map['timestamp'] as dynamic).toDate() as DateTime;
+        timestamp = '${dt.hour.toString().padLeft(2, '0')}:${dt.minute.toString().padLeft(2, '0')}';
+      } catch (_) {}
+    }
     return MessageModel(
       id: id,
       senderId: map['senderId'] ?? '',
       senderName: map['senderName'],
       senderAvatar: map['senderAvatar'],
       content: map['content'] ?? '',
-      timestamp: map['timestamp'] != null
-          ? (map['timestamp'] as dynamic).toDate()
-          : DateTime.now(),
+      timestamp: timestamp,
       status: map['status'] ?? 'sent',
       type: map['type'] ?? 'text',
       mediaUrl: map['mediaUrl'],
       fileName: map['fileName'],
       fileSize: map['fileSize'],
-      audioDuration: (map['audioDuration'] as num?)?.toDouble(),
+      mimeType: map['mimeType'],
       reactions: List<String>.from(map['reactions'] ?? []),
       isStarred: map['isStarred'] ?? false,
       replyTo: map['replyTo'] != null ? ReplyInfo.fromMap(map['replyTo']) : null,
+      meta: map['meta'],
     );
   }
-
-  Map<String, dynamic> toMap() => {
-    'senderId': senderId,
-    'senderName': senderName,
-    'senderAvatar': senderAvatar,
-    'content': content,
-    'timestamp': timestamp,
-    'status': status,
-    'type': type,
-    if (mediaUrl != null) 'mediaUrl': mediaUrl,
-    if (fileName != null) 'fileName': fileName,
-    if (fileSize != null) 'fileSize': fileSize,
-    if (audioDuration != null) 'audioDuration': audioDuration,
-    'reactions': reactions,
-    'isStarred': isStarred,
-    if (replyTo != null) 'replyTo': replyTo!.toMap(),
-  };
-
-  MessageModel copyWith({
-    String? status,
-    String? content,
-    List<String>? reactions,
-    bool? isStarred,
-  }) => MessageModel(
-    id: id,
-    senderId: senderId,
-    senderName: senderName,
-    senderAvatar: senderAvatar,
-    content: content ?? this.content,
-    timestamp: timestamp,
-    status: status ?? this.status,
-    type: type,
-    mediaUrl: mediaUrl,
-    fileName: fileName,
-    fileSize: fileSize,
-    audioDuration: audioDuration,
-    reactions: reactions ?? this.reactions,
-    isStarred: isStarred ?? this.isStarred,
-    replyTo: replyTo,
-  );
 }
 
 class ReplyInfo {

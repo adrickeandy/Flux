@@ -2,15 +2,15 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'dart:io';
 import '../models/message_model.dart';
-import 'package:cloudinary_public/cloudinary_public.dart';
+import 'cloudinary_service.dart';
 
 class ChatService {
   final _db   = FirebaseFirestore.instance;
   final _auth = FirebaseAuth.instance;
-  final _cloudinary = CloudinaryPublic(
-    'YOUR_CLOUD_NAME', 'YOUR_UPLOAD_PRESET', cache: false);
 
   String get _uid => _auth.currentUser!.uid;
+  String get _displayName => _auth.currentUser!.displayName ?? 'User';
+  String? get _photoURL => _auth.currentUser!.photoURL;
 
   String chatId(String otherUid) {
     final ids = [_uid, otherUid]..sort();
@@ -46,16 +46,16 @@ class ChatService {
     String? mediaUrl,
     String? fileName,
     String? fileSize,
-    double? audioDuration,
+    String? mimeType,
+    Map<String, dynamic>? meta,
     ReplyInfo? replyTo,
     required String otherUserId,
     required bool isGroup,
   }) async {
-    final user = _auth.currentUser!;
     final msg = {
       'senderId': _uid,
-      'senderName': user.displayName,
-      'senderAvatar': user.photoURL,
+      'senderName': _displayName,
+      'senderAvatar': _photoURL,
       'content': content,
       'timestamp': FieldValue.serverTimestamp(),
       'status': 'sent',
@@ -63,42 +63,64 @@ class ChatService {
       if (mediaUrl != null) 'mediaUrl': mediaUrl,
       if (fileName != null) 'fileName': fileName,
       if (fileSize != null) 'fileSize': fileSize,
-      if (audioDuration != null) 'audioDuration': audioDuration,
+      if (mimeType != null) 'mimeType': mimeType,
+      if (meta != null) 'meta': meta,
       'reactions': [],
       'isStarred': false,
       if (replyTo != null) 'replyTo': replyTo.toMap(),
     };
-    await _db.collection('chats').doc(chatDocId).collection('messages').add(msg);
+
+    await _db.collection('chats').doc(chatDocId)
+        .collection('messages').add(msg);
+
     final chatUpdate = {
-      'lastMessage': type == 'text' ? content : '📎 $type',
+      'lastMessage': type == 'text' ? content : 'Sent a $type',
       'lastMessageSenderId': _uid,
-      'lastMessageSenderName': user.displayName,
+      'lastMessageSenderName': _displayName,
       'lastMessageStatus': 'sent',
       'lastMessageTimestamp': FieldValue.serverTimestamp(),
       'isGroup': isGroup,
+      'participants': FieldValue.arrayUnion([_uid, if (!isGroup) otherUserId]),
     };
+
     if (!isGroup) {
-      chatUpdate['unreadCount.$otherUserId'] = FieldValue.increment(1) as dynamic;
-      chatUpdate['participants'] = FieldValue.arrayUnion([_uid, otherUserId]) as dynamic;
+      await _db.collection('chats').doc(chatDocId).set({
+        ...chatUpdate,
+        'unreadCount.$otherUserId': FieldValue.increment(1),
+        'unreadCount.$_uid': 0,
+        'typingStatus.$_uid': 0,
+        'createdAt': FieldValue.serverTimestamp(),
+      }, SetOptions(merge: true));
+    } else {
+      await _db.collection('chats').doc(chatDocId)
+          .update(chatUpdate);
     }
-    await _db.collection('chats').doc(chatDocId).set(chatUpdate, SetOptions(merge: true));
   }
 
   Future<void> markAsRead(String chatDocId) async {
-    final snap = await _db.collection('chats').doc(chatDocId)
-        .collection('messages')
-        .where('senderId', isNotEqualTo: _uid)
-        .where('status', isNotEqualTo: 'read')
-        .get();
-    final batch = _db.batch();
-    for (final doc in snap.docs) {
-      batch.update(doc.reference, {'status': 'read'});
-    }
-    batch.update(_db.collection('chats').doc(chatDocId), {
-      'unreadCount.$_uid': 0,
-      'lastMessageStatus': 'read',
-    });
-    await batch.commit();
+    try {
+      await _db.collection('chats').doc(chatDocId).update({
+        'unreadCount.$_uid': 0,
+      });
+      final unread = await _db.collection('chats').doc(chatDocId)
+          .collection('messages')
+          .where('senderId', isNotEqualTo: _uid)
+          .where('status', isNotEqualTo: 'read')
+          .get();
+      final batch = _db.batch();
+      for (final doc in unread.docs) {
+        batch.update(doc.reference, {'status': 'read'});
+      }
+      await batch.commit();
+    } catch (_) {}
+  }
+
+  Future<void> setTyping(String chatDocId) async {
+    try {
+      await _db.collection('chats').doc(chatDocId).set({
+        'typingStatus': {_uid: DateTime.now().millisecondsSinceEpoch}
+      }, SetOptions(merge: true));
+    } catch (_) {}
   }
 
   Future<void> toggleStar(String chatDocId, String msgId, bool current) =>
@@ -116,20 +138,22 @@ class ChatService {
             : FieldValue.arrayUnion([_uid]),
       });
 
-  Future<void> setTyping(String chatDocId) =>
-      _db.collection('chats').doc(chatDocId).set({
-        'typingStatus': {_uid: DateTime.now().millisecondsSinceEpoch}
-      }, SetOptions(merge: true));
+  Future<void> clearChat(String chatDocId) async {
+    final msgs = await _db.collection('chats').doc(chatDocId)
+        .collection('messages').get();
+    final batch = _db.batch();
+    for (final doc in msgs.docs) {
+      batch.delete(doc.reference);
+    }
+    await batch.commit();
+  }
+
+  Future<void> vote(String chatDocId, String msgId, int optionIndex) =>
+      _db.collection('chats').doc(chatDocId).collection('messages').doc(msgId)
+          .update({'meta.votes.$optionIndex': FieldValue.arrayUnion([_uid])});
 
   Future<String> uploadFile(File file) async {
-    try {
-      final res = await _cloudinary.uploadFile(
-        CloudinaryFile.fromFile(file.path, resourceType: CloudinaryResourceType.Auto),
-      );
-      return res.secureUrl;
-    } catch (e) {
-      return '';
-    }
+    return await CloudinaryService.uploadFile(file);
   }
 
   Future<void> createGroup({
@@ -137,17 +161,16 @@ class ChatService {
     required List<String> memberIds,
     String? avatarUrl,
   }) async {
-    final participants = [...memberIds, _uid];
     await _db.collection('chats').add({
       'groupName': name,
-      'groupAvatar': avatarUrl,
+      'groupAvatar': avatarUrl ?? 'https://picsum.photos/seed/${DateTime.now().millisecondsSinceEpoch}/200/200',
       'isGroup': true,
-      'participants': participants,
+      'participants': [...memberIds, _uid],
       'lastMessage': 'Group created',
       'lastMessageTimestamp': FieldValue.serverTimestamp(),
-      'archivedBy': [],
-      'createdBy': _uid,
+      'lastMessageSenderId': _uid,
       'createdAt': FieldValue.serverTimestamp(),
+      'archivedBy': [],
     });
   }
 }
